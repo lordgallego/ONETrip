@@ -25,7 +25,7 @@ const AppHeader = () => {
     <header className="h-16 border-b border-border/30 bg-white/40 backdrop-blur-xl flex items-center gap-3 px-4 sticky top-0 z-40">
       {/* Brand */}
       <div className="flex items-center gap-3 mr-2">
-        <img src="/dost-logo.png" alt="DOST" className="h-9 w-9 object-contain" />
+        <img src="/onetrip-logo.png" alt="One Trip" className="h-10 w-10 object-contain" />
         <div className="hidden sm:flex flex-col leading-tight">
           <span className="font-bold text-base tracking-tight">One Trip</span>
           <span className="text-[10px] text-muted-foreground -mt-0.5">One System for Efficient Mobility</span>

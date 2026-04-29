@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, isAfter, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Package, Send } from "lucide-react";
+import { Package, Send, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,10 +15,14 @@ import { CardHeader, CardTitle, CardDescription, CardContent } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth";
 import { useNotifications } from "@/hooks/use-notifications";
-import { upsertPadalaRequest, broadcastNotification, type PadalaSize } from "@/lib/queries";
+import {
+  fetchVehicleRequests, upsertPadalaRequest, pushNotification,
+  type PadalaSize, type VehicleRequest,
+} from "@/lib/queries";
 import { toast } from "sonner";
 
 const SIZES: PadalaSize[] = ["Small", "Medium", "Large", "Extra Large"];
+const NO_TRIP = "__none__";
 
 const schema = z.object({
   size: z.enum(["Small", "Medium", "Large", "Extra Large"]),
@@ -26,6 +30,7 @@ const schema = z.object({
   description: z.string().min(2, "Required"),
   recipient: z.string().min(2, "Required"),
   destination: z.string().optional(),
+  vehicle_request_id: z.string().optional(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -33,47 +38,109 @@ const PadalaRequestPage = () => {
   const { profile, user } = useAuth();
   const { pushLocal } = useNotifications();
   const navigate = useNavigate();
+  const [trips, setTrips] = useState<VehicleRequest[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submittedAt] = useState(() => new Date());
 
   const requesterName = profile?.name || user?.user_metadata?.full_name || user?.email || "—";
 
+  // Upcoming trips that haven't been rejected — these are what a Padala
+  // sender can ride along with.
+  useEffect(() => {
+    fetchVehicleRequests()
+      .then((all) => {
+        const now = new Date();
+        const upcoming = all
+          .filter((r) => r.status !== "Rejected")
+          .filter((r) => {
+            try {
+              return isAfter(parseISO(r.eta), now);
+            } catch {
+              return true;
+            }
+          })
+          .sort((a, b) => a.etd.localeCompare(b.etd));
+        setTrips(upcoming);
+      })
+      .catch(() => {});
+  }, []);
+
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { size: "Small", weight_kg: 0.5, description: "", recipient: "", destination: "" },
+    defaultValues: {
+      size: "Small",
+      weight_kg: 0.5,
+      description: "",
+      recipient: "",
+      destination: "",
+      vehicle_request_id: NO_TRIP,
+    },
   });
+
+  const tripId = watch("vehicle_request_id");
+  const selectedTrip = useMemo(
+    () => (tripId && tripId !== NO_TRIP ? trips.find((t) => t.id === tripId) : undefined),
+    [tripId, trips]
+  );
+
+  // Auto-populate destination when a trip is selected.
+  useEffect(() => {
+    if (selectedTrip) setValue("destination", selectedTrip.destination);
+  }, [selectedTrip, setValue]);
 
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
     try {
-      await upsertPadalaRequest({
+      const linkedTrip = values.vehicle_request_id && values.vehicle_request_id !== NO_TRIP
+        ? trips.find((t) => t.id === values.vehicle_request_id)
+        : undefined;
+
+      const created = await upsertPadalaRequest({
         size: values.size,
         weight_kg: values.weight_kg,
         description: values.description,
         recipient: values.recipient,
-        destination: values.destination || null,
+        destination: values.destination || linkedTrip?.destination || null,
         status: "Pending",
         requested_by_id: profile?.id ?? null,
         requested_by_name: requesterName,
+        vehicle_request_id: linkedTrip?.id ?? null,
+        vehicle_id: linkedTrip?.vehicle_id ?? null,
       });
 
       try {
-        await broadcastNotification(
-          "New Padala Request",
-          `${requesterName} sent a ${values.size.toLowerCase()} parcel to ${values.recipient}.`,
-          "/dashboard",
-        );
+        if (linkedTrip) {
+          // Specifically alert the trip's requester so they know a parcel
+          // is hitching along.
+          await pushNotification({
+            kind: "padala_attached",
+            title: "Padala attached to your trip",
+            body: `${requesterName} is sending a ${values.size.toLowerCase()} parcel (${values.weight_kg} kg) to ${values.recipient} on your trip to ${linkedTrip.destination}.`,
+            link: "/dashboard",
+            userId: linkedTrip.requested_by_id,
+          });
+        } else {
+          await pushNotification({
+            kind: "new_request",
+            title: "New Padala request",
+            body: `${requesterName} → ${values.recipient}${values.destination ? " · " + values.destination : ""} (${values.size}, ${values.weight_kg} kg)`,
+            link: "/dashboard",
+          });
+        }
       } catch {
-        // optional broadcast — ignore
+        // notifications optional — ignore
       }
 
       pushLocal({
-        title: "Padala request submitted",
-        body: `${values.size} · ${values.weight_kg} kg · ${values.recipient}`,
+        title: linkedTrip ? "Padala attached to trip" : "Padala request submitted",
+        body: linkedTrip
+          ? `Riding ${linkedTrip.vehicle_name ?? "trip"} → ${linkedTrip.destination}`
+          : `${values.size} · ${values.weight_kg} kg · ${values.recipient}`,
         link: "/dashboard",
       });
-      toast.success("Padala request submitted");
+      toast.success(linkedTrip ? "Padala attached to trip" : "Padala request submitted");
       navigate("/dashboard");
+      void created;
     } catch (e) {
       toast.error((e as Error).message || "Could not submit request");
     } finally {
@@ -89,11 +156,58 @@ const PadalaRequestPage = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Submit Padala (Parcel)</h1>
-          <p className="text-sm text-muted-foreground">Send an item via the next available dispatch.</p>
+          <p className="text-sm text-muted-foreground">Send an item — optionally riding along an existing trip.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Ride-along selector */}
+        <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Truck className="h-4 w-4" /> Ride along an existing trip?</CardTitle>
+            <CardDescription>
+              If a vehicle is already heading to your destination, attach your parcel to that trip instead of dispatching a new vehicle.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select
+              value={watch("vehicle_request_id") || NO_TRIP}
+              onValueChange={(v) => setValue("vehicle_request_id", v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={trips.length ? "Pick an upcoming trip…" : "No upcoming trips"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_TRIP}>— Standalone (no ride-along) —</SelectItem>
+                {trips.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {format(parseISO(t.etd), "MMM d, HH:mm")} → {t.destination}
+                    <span className="ml-2 text-[10px] text-muted-foreground">{t.vehicle_name ?? "Unassigned"} · {t.status}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedTrip && (
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/15 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{selectedTrip.destination}</span>
+                  <Badge variant="outline" className="text-[10px]">{selectedTrip.status}</Badge>
+                </div>
+                <p className="text-muted-foreground">
+                  {format(parseISO(selectedTrip.etd), "EEE, MMM d · HH:mm")} → {format(parseISO(selectedTrip.eta), "HH:mm")}
+                </p>
+                <p className="text-muted-foreground">
+                  {selectedTrip.vehicle_name ?? "Vehicle TBD"} · Requested by {selectedTrip.requested_by_name ?? "—"}
+                </p>
+                <p className="text-[11px] text-primary mt-1">
+                  Your padala will be linked to this trip. {selectedTrip.requested_by_name ? `${selectedTrip.requested_by_name} will be notified.` : ""}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </LiquidGlassCard>
+
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
           <CardHeader>
             <CardTitle className="text-base">Parcel Details</CardTitle>
@@ -133,7 +247,14 @@ const PadalaRequestPage = () => {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="destination">Destination</Label>
-                <Input id="destination" placeholder="e.g. DOST PSTC Aklan" {...register("destination")} />
+                <Input
+                  id="destination"
+                  placeholder={selectedTrip ? selectedTrip.destination : "e.g. DOST PSTC Aklan"}
+                  {...register("destination")}
+                />
+                {selectedTrip && (
+                  <p className="text-[11px] text-muted-foreground">Auto-filled from the selected trip — edit if it's a sub-stop.</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -155,7 +276,7 @@ const PadalaRequestPage = () => {
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => navigate("/dashboard")}>Cancel</Button>
           <Button type="submit" disabled={submitting}>
-            <Send className="h-4 w-4 mr-2" /> {submitting ? "Submitting..." : "Submit Padala"}
+            <Send className="h-4 w-4 mr-2" /> {submitting ? "Submitting..." : (selectedTrip ? "Attach Padala" : "Submit Padala")}
           </Button>
         </div>
       </form>

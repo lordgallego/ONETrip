@@ -10,6 +10,8 @@ export interface Vehicle {
   name: string;
   plate_number: string | null;
   capacity: number | null;
+  driver_name: string | null;
+  driver_contact: string | null;
 }
 
 export interface VehicleRequest {
@@ -20,7 +22,7 @@ export interface VehicleRequest {
   travel_date: string;            // ISO date
   etd: string;                    // ISO timestamp (estimated time of departure)
   eta: string;                    // ISO timestamp (estimated time of arrival)
-  passengers: string;             // comma separated names
+  passengers: string;
   requested_by_id: string | null;
   requested_by_name: string | null;
   recommending_approval_id: string | null;
@@ -47,6 +49,7 @@ export interface PadalaRequest {
   requested_by_id: string | null;
   requested_by_name: string | null;
   vehicle_id: string | null;
+  vehicle_request_id: string | null;   // ride-along link
   notes: string | null;
 }
 
@@ -58,23 +61,21 @@ export interface AppUser {
   is_approved: boolean;
 }
 
+export type NotificationKind = "info" | "new_request" | "status_change" | "padala_attached";
+
 export interface Notification {
   id: string;
   user_id: string | null;
   title: string;
   body: string | null;
   link: string | null;
+  kind: NotificationKind;
   read: boolean;
   created_at: string;
 }
 
 // ─── Helpers ────────────────────────────────────────────────
 
-/**
- * Some installs may not have the One Trip Postgres tables yet. We swallow
- * the "missing relation" error so the UI can still render with empty state.
- * Real errors still bubble up.
- */
 async function safeSelect<T>(promise: Promise<{ data: T[] | null; error: any }>): Promise<T[]> {
   const { data, error } = await promise;
   if (error) {
@@ -203,14 +204,29 @@ export async function markNotificationRead(id: string) {
   if (error) throw error;
 }
 
-export async function broadcastNotification(title: string, body: string, link?: string | null) {
-  // user_id = null indicates a site-wide broadcast.
+/**
+ * Fire a notification. Pass userId=null for site-wide broadcasts.
+ * `kind` lets the bell render different icons / styles for each event type.
+ */
+export async function pushNotification(opts: {
+  userId?: string | null;
+  title: string;
+  body?: string;
+  link?: string;
+  kind?: NotificationKind;
+}) {
   const { error } = await supabaseAuth.from("notifications").insert({
-    user_id: null,
-    title,
-    body,
-    link: link ?? null,
+    user_id: opts.userId ?? null,
+    title: opts.title,
+    body: opts.body ?? null,
+    link: opts.link ?? null,
+    kind: opts.kind ?? "info",
     read: false,
   });
   if (error) throw error;
+}
+
+/** @deprecated use pushNotification */
+export async function broadcastNotification(title: string, body: string, link?: string | null) {
+  await pushNotification({ title, body, link: link ?? undefined, kind: "info" });
 }

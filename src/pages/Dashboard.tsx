@@ -13,7 +13,7 @@ import VehicleTimeline from "@/components/VehicleTimeline";
 import { useFetch } from "@/hooks/use-fetch";
 import {
   fetchVehicles, fetchVehicleRequests, fetchPadalaRequests,
-  setVehicleRequestStatus, broadcastNotification,
+  setVehicleRequestStatus, pushNotification,
   type VehicleRequest, type RequestStatus,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
@@ -59,15 +59,24 @@ const Dashboard = () => {
     setActionLoading(true);
     try {
       await setVehicleRequestStatus(req.id, status, profile.id, profile.name ?? profile.email);
-      try {
-        await broadcastNotification(
-          `Request ${status}`,
-          `${profile.name ?? profile.email} ${status.toLowerCase()} ${req.requested_by_name ?? "the"} request to ${req.destination}.`,
-          "/dashboard",
-        );
-      } catch {
-        // notifications table optional — ignore failures
+
+      // Status changes only DM the requester (not a site-wide broadcast,
+      // to avoid swamping the bell with status-change pings everyone can
+      // already see on the timeline).
+      if (req.requested_by_id) {
+        try {
+          await pushNotification({
+            kind: "status_change",
+            userId: req.requested_by_id,
+            title: `Your trip was ${status.toLowerCase()}`,
+            body: `${req.destination} on ${req.travel_date} — by ${profile.name ?? profile.email}`,
+            link: "/dashboard",
+          });
+        } catch {
+          // notifications optional
+        }
       }
+
       toast.success(`Marked as ${status}`);
       setSelected(null);
       refetch();
@@ -134,6 +143,7 @@ const Dashboard = () => {
             <VehicleTimeline
               vehicles={data?.vehicles ?? []}
               requests={data?.vehicleRequests ?? []}
+              padala={data?.padalaRequests ?? []}
               onSelect={(r) => setSelected(r)}
             />
           )}

@@ -7,6 +7,7 @@ interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   markRead: (id: string) => Promise<void>;
+  markAllRead: () => Promise<void>;
   pushLocal: (n: { title: string; body?: string; link?: string }) => void;
   refetch: () => Promise<void>;
 }
@@ -49,10 +50,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     try {
       await markNotificationRead(id);
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    } catch (e) {
+    } catch {
       // ignore — table may not exist
     }
   }, []);
+
+  const markAllRead = useCallback(async () => {
+    const unread = notifications.filter((n) => !n.read);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await Promise.allSettled(unread.map((n) => markNotificationRead(n.id)));
+  }, [notifications]);
 
   /**
    * Optimistic local-only notification (also fires a toast). Useful right
@@ -67,6 +74,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       title: n.title,
       body: n.body ?? null,
       link: n.link ?? null,
+      kind: "info",
       read: false,
       created_at: new Date().toISOString(),
     };
@@ -77,7 +85,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, pushLocal, refetch }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, pushLocal, refetch }}>
       {children}
     </NotificationContext.Provider>
   );

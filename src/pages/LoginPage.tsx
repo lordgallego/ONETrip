@@ -13,8 +13,8 @@ const LoginPage = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center space-y-3">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/10">
-            <img src="/dost-logo.png" alt="DOST" className="h-14 w-14 object-contain" />
+          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/10">
+            <img src="/onetrip-logo.png" alt="One Trip" className="h-20 w-20 object-contain" />
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">One Trip</h1>

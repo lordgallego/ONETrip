@@ -117,7 +117,7 @@ const DostLogo: React.FC<{ active: boolean }> = ({ active }) => (
       }`}
       style={{ transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)" }}
     >
-      <img src="/dost-logo.png" alt="DOST" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain drop-shadow-sm" />
+      <img src="/onetrip-logo.png" alt="One Trip" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain drop-shadow-sm" />
     </div>
     <span className={`hidden md:inline text-[10px] font-medium transition-opacity duration-300 ${active ? "text-foreground opacity-100" : "text-foreground/40 opacity-0 group-hover:opacity-100"}`}>
       Home
