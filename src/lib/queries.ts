@@ -147,6 +147,16 @@ export async function upsertVehicleRequest(req: Partial<VehicleRequest> & {
   return data as VehicleRequest;
 }
 
+export async function deleteVehicleRequest(id: string) {
+  const { error } = await supabaseAuth.from("vehicle_requests").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function deletePadalaRequest(id: string) {
+  const { error } = await supabaseAuth.from("padala_requests").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function setVehicleRequestStatus(
   id: string,
   status: RequestStatus,

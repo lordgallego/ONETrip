@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Car, Package, CalendarRange, CheckCircle2, Clock, ThumbsUp, X, Plus } from "lucide-react";
+import { Car, Package, CalendarRange, CheckCircle2, Clock, ThumbsUp, X, Plus, Trash2 } from "lucide-react";
 import { LiquidGlassCard } from "@/components/ui/liquid-glass-card";
 import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import VehicleTimeline from "@/components/VehicleTimeline";
 import { useFetch } from "@/hooks/use-fetch";
 import {
   fetchVehicles, fetchVehicleRequests, fetchPadalaRequests,
-  setVehicleRequestStatus, pushNotification,
+  setVehicleRequestStatus, deleteVehicleRequest, pushNotification,
   type VehicleRequest, type RequestStatus,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
@@ -28,7 +28,7 @@ const STATUS_BADGE: Record<RequestStatus, "default" | "secondary" | "outline" | 
 };
 
 const Dashboard = () => {
-  const { profile, canRecommend, canApprove } = useAuth();
+  const { profile, canRecommend, canApprove, isAdmin } = useAuth();
   const { refetch: refetchNotifications } = useNotifications();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,6 +56,14 @@ const Dashboard = () => {
       padalaCount: p.length,
     };
   }, [data]);
+
+  // Rejected trips drop off the timeline immediately (the public schedule
+  // shouldn't be cluttered with refused requests). They remain in the DB
+  // for audit / status_change-notification deep-links.
+  const timelineTrips = useMemo(
+    () => (data?.vehicleRequests ?? []).filter((r) => r.status !== "Rejected"),
+    [data?.vehicleRequests]
+  );
 
   // Sorted by date_prepared descending — most recent first.
   const sortedByDate = useMemo(() => {
@@ -93,6 +101,29 @@ const Dashboard = () => {
       const next = new URLSearchParams(searchParams);
       next.delete("req");
       setSearchParams(next, { replace: true });
+    }
+  };
+
+  const handleDelete = async (req: VehicleRequest) => {
+    if (!isAdmin) return;
+    const ok = window.confirm(
+      `Delete this trip permanently?\n\n${req.origin ?? "—"} → ${req.destination}\n${req.travel_date}\n\nThis cannot be undone.`
+    );
+    if (!ok) return;
+    setActionLoading(true);
+    try {
+      await deleteVehicleRequest(req.id);
+      toast.success("Trip deleted");
+      clearSelected();
+      refetch();
+    } catch (e) {
+      const msg =
+        (e as { message?: string })?.message ||
+        (e as { details?: string })?.details ||
+        "Delete failed";
+      toast.error(msg);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -189,7 +220,7 @@ const Dashboard = () => {
           ) : (
             <VehicleTimeline
               vehicles={data?.vehicles ?? []}
-              requests={data?.vehicleRequests ?? []}
+              requests={timelineTrips}
               padala={data?.padalaRequests ?? []}
               onSelect={(r) => setSelected(r)}
             />
@@ -275,22 +306,36 @@ const Dashboard = () => {
                 </Field>
               </div>
 
-              <DialogFooter className="flex-wrap gap-2 sm:justify-end">
-                {canRecommend && selected.status === "Pending" && (
-                  <Button variant="outline" disabled={actionLoading} onClick={() => handleAction(selected, "Recommended")}>
-                    <ThumbsUp className="h-4 w-4 mr-2" /> Recommend
+              <DialogFooter className="flex-wrap gap-2 sm:justify-between">
+                {/* Admin-only destructive zone */}
+                {isAdmin ? (
+                  <Button
+                    variant="ghost"
+                    disabled={actionLoading}
+                    onClick={() => handleDelete(selected)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
                   </Button>
-                )}
-                {canApprove && (selected.status === "Pending" || selected.status === "Recommended") && (
-                  <>
-                    <Button variant="destructive" disabled={actionLoading} onClick={() => handleAction(selected, "Rejected")}>
-                      <X className="h-4 w-4 mr-2" /> Reject
+                ) : <span />}
+
+                <div className="flex flex-wrap gap-2">
+                  {canRecommend && selected.status === "Pending" && (
+                    <Button variant="outline" disabled={actionLoading} onClick={() => handleAction(selected, "Recommended")}>
+                      <ThumbsUp className="h-4 w-4 mr-2" /> Recommend
                     </Button>
-                    <Button disabled={actionLoading} onClick={() => handleAction(selected, "Approved")}>
-                      <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
-                    </Button>
-                  </>
-                )}
+                  )}
+                  {canApprove && (selected.status === "Pending" || selected.status === "Recommended") && (
+                    <>
+                      <Button variant="destructive" disabled={actionLoading} onClick={() => handleAction(selected, "Rejected")}>
+                        <X className="h-4 w-4 mr-2" /> Reject
+                      </Button>
+                      <Button disabled={actionLoading} onClick={() => handleAction(selected, "Approved")}>
+                        <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
+                      </Button>
+                    </>
+                  )}
+                </div>
               </DialogFooter>
             </>
           )}

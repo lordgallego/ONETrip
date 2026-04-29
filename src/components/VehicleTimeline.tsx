@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Vehicle, VehicleRequest, RequestStatus, PadalaRequest } from "@/lib/queries";
+import { cn } from "@/lib/utils";
 
 interface Props {
   vehicles: Vehicle[];
@@ -372,6 +373,15 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                         if (!block) return null;
                         const status = STATUS_STYLES[req.status] ?? STATUS_STYLES.Pending;
                         const padalaCount = padalaByTrip.get(req.id)?.length ?? 0;
+                        // Adaptive content: each tier shows progressively more
+                        // info as horizontal space grows. Wider blocks also
+                        // allow From/To to wrap onto two lines so long names
+                        // remain readable instead of truncating.
+                        const w = block.width;
+                        const showLabels = w >= 90;            // "From"/"To" prefix labels
+                        const showTime = w >= 130;             // ETD–ETA · requester
+                        const showPurpose = w >= 200;          // italic purpose
+                        const allowWrap = w >= 220;            // let long origins wrap
                         return (
                           <TooltipProvider key={req.id} delayDuration={150}>
                             <Tooltip>
@@ -389,30 +399,40 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                 >
                                   <div className="flex flex-col h-full px-2 py-1.5 gap-0.5 text-left">
                                     {/* FROM */}
-                                    <div className="flex items-center gap-1.5 min-w-0 leading-tight">
-                                      <span className="opacity-75 text-[9px] font-bold uppercase tracking-wider shrink-0 w-7">From</span>
-                                      <span className="truncate text-[11px] font-medium">{req.origin ?? "—"}</span>
+                                    <div className="flex items-start gap-1.5 min-w-0 leading-tight">
+                                      {showLabels && (
+                                        <span className="opacity-75 text-[9px] font-bold uppercase tracking-wider shrink-0 w-7 mt-px">From</span>
+                                      )}
+                                      <span className={cn("text-[11px] font-medium min-w-0", allowWrap ? "break-words line-clamp-2" : "truncate")}>
+                                        {req.origin ?? "—"}
+                                      </span>
                                     </div>
                                     {/* TO */}
-                                    <div className="flex items-center gap-1.5 min-w-0 leading-tight">
-                                      <span className="opacity-75 text-[9px] font-bold uppercase tracking-wider shrink-0 w-7">To</span>
-                                      <span className="truncate text-[12px] font-semibold">{req.destination}</span>
+                                    <div className="flex items-start gap-1.5 min-w-0 leading-tight">
+                                      {showLabels ? (
+                                        <span className="opacity-75 text-[9px] font-bold uppercase tracking-wider shrink-0 w-7 mt-px">To</span>
+                                      ) : (
+                                        <span className="opacity-80 text-[10px] font-bold shrink-0">→</span>
+                                      )}
+                                      <span className={cn("text-[12px] font-semibold min-w-0 flex-1", allowWrap ? "break-words line-clamp-2" : "truncate")}>
+                                        {req.destination}
+                                      </span>
                                       {padalaCount > 0 && (
-                                        <span className="ml-auto inline-flex items-center gap-0.5 bg-white/25 rounded-sm px-1 text-[10px] shrink-0">
+                                        <span className="inline-flex items-center gap-0.5 bg-white/25 rounded-sm px-1 text-[10px] shrink-0 mt-px">
                                           <Package className="h-2.5 w-2.5" /> {padalaCount}
                                         </span>
                                       )}
                                     </div>
                                     {/* Time + requester */}
-                                    {block.width > 110 && (
+                                    {showTime && (
                                       <div className="text-[10px] opacity-90 truncate leading-tight mt-0.5">
                                         {format(parseISO(req.etd), "HH:mm")}–{format(parseISO(req.eta), "HH:mm")}
                                         {req.requested_by_name ? ` · ${req.requested_by_name}` : ""}
                                       </div>
                                     )}
                                     {/* Purpose */}
-                                    {block.width > 180 && req.purpose && (
-                                      <div className="text-[10px] opacity-75 truncate italic leading-tight">
+                                    {showPurpose && req.purpose && (
+                                      <div className="text-[10px] opacity-75 italic leading-tight line-clamp-1">
                                         {req.purpose}
                                       </div>
                                     )}
