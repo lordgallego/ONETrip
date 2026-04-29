@@ -41,8 +41,15 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
       toast.error("Invalid URL");
       return;
     }
-    if (!trimmedKey.startsWith("eyJ")) {
-      toast.error("Anon key should start with 'eyJ' (JWT)");
+    // Supabase has two key formats: legacy JWT anon keys (eyJ…) and
+    // the newer publishable keys (sb_publishable_…). Either is fine to
+    // expose to the browser. Reject the secret key explicitly.
+    if (trimmedKey.startsWith("sb_secret_") || trimmedKey.startsWith("service_role")) {
+      toast.error("Use the publishable / anon key — never the service-role key");
+      return;
+    }
+    if (!trimmedKey.startsWith("eyJ") && !trimmedKey.startsWith("sb_publishable_")) {
+      toast.error("Key should start with 'eyJ' (legacy anon JWT) or 'sb_publishable_' (new publishable key)");
       return;
     }
 
@@ -108,10 +115,10 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="sb-key">Anon (public) key</Label>
+            <Label htmlFor="sb-key">Publishable / Anon key</Label>
             <Input
               id="sb-key"
-              placeholder="eyJhbGciOi…"
+              placeholder="sb_publishable_… or eyJhbGciOi…"
               value={anonKey}
               onChange={(e) => setAnonKey(e.target.value)}
               autoComplete="off"
@@ -119,7 +126,7 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
               type="password"
             />
             <p className="text-[11px] text-muted-foreground">
-              This is the <strong>anon</strong>/<strong>public</strong> key — never your service-role key. Find both in
+              Either the new <code>sb_publishable_</code> key or the legacy <code>eyJ…</code> anon JWT — never the service-role / secret key. Find both in
               <a
                 href="https://supabase.com/dashboard"
                 target="_blank"
