@@ -1,0 +1,216 @@
+import { supabaseAnon as supabase, supabase as supabaseAuth } from "./supabase";
+import type { AppRole } from "./auth";
+
+// ─── Domain Types ───────────────────────────────────────────
+
+export type RequestStatus = "Pending" | "Recommended" | "Approved" | "Rejected";
+
+export interface Vehicle {
+  id: string;
+  name: string;
+  plate_number: string | null;
+  capacity: number | null;
+}
+
+export interface VehicleRequest {
+  id: string;
+  date_prepared: string;          // ISO timestamp
+  destination: string;
+  purpose: string;
+  travel_date: string;            // ISO date
+  etd: string;                    // ISO timestamp (estimated time of departure)
+  eta: string;                    // ISO timestamp (estimated time of arrival)
+  passengers: string;             // comma separated names
+  requested_by_id: string | null;
+  requested_by_name: string | null;
+  recommending_approval_id: string | null;
+  recommending_approval_name: string | null;
+  status: RequestStatus;
+  approver_id: string | null;
+  approver_name: string | null;
+  vehicle_id: string | null;
+  vehicle_name: string | null;
+  notes: string | null;
+}
+
+export type PadalaSize = "Small" | "Medium" | "Large" | "Extra Large";
+
+export interface PadalaRequest {
+  id: string;
+  date_prepared: string;
+  size: PadalaSize;
+  weight_kg: number;
+  description: string;
+  recipient: string;
+  destination: string | null;
+  status: RequestStatus;
+  requested_by_id: string | null;
+  requested_by_name: string | null;
+  vehicle_id: string | null;
+  notes: string | null;
+}
+
+export interface AppUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: AppRole;
+  is_approved: boolean;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string | null;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+// ─── Helpers ────────────────────────────────────────────────
+
+/**
+ * Some installs may not have the One Trip Postgres tables yet. We swallow
+ * the "missing relation" error so the UI can still render with empty state.
+ * Real errors still bubble up.
+ */
+async function safeSelect<T>(promise: Promise<{ data: T[] | null; error: any }>): Promise<T[]> {
+  const { data, error } = await promise;
+  if (error) {
+    if (error.code === "42P01" || /relation .* does not exist/i.test(error.message ?? "")) {
+      return [];
+    }
+    throw error;
+  }
+  return data ?? [];
+}
+
+// ─── App Users ──────────────────────────────────────────────
+
+export async function fetchAppUsers(): Promise<AppUser[]> {
+  return safeSelect<AppUser>(
+    supabase.from("app_users").select("*").order("name") as any
+  );
+}
+
+export async function updateAppUser(id: string, updates: Partial<AppUser>) {
+  const { error } = await supabaseAuth.from("app_users").update(updates).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteAppUser(id: string) {
+  const { error } = await supabaseAuth.from("app_users").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ─── Vehicles ───────────────────────────────────────────────
+
+export async function fetchVehicles(): Promise<Vehicle[]> {
+  return safeSelect<Vehicle>(
+    supabase.from("vehicles").select("*").order("name") as any
+  );
+}
+
+// ─── Vehicle Requests ───────────────────────────────────────
+
+export async function fetchVehicleRequests(): Promise<VehicleRequest[]> {
+  return safeSelect<VehicleRequest>(
+    supabase
+      .from("vehicle_requests")
+      .select("*")
+      .order("travel_date", { ascending: true }) as any
+  );
+}
+
+export async function upsertVehicleRequest(req: Partial<VehicleRequest> & {
+  destination: string;
+  purpose: string;
+  travel_date: string;
+  etd: string;
+  eta: string;
+  passengers: string;
+}) {
+  const { data, error } = await supabaseAuth
+    .from("vehicle_requests")
+    .upsert(req)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as VehicleRequest;
+}
+
+export async function setVehicleRequestStatus(
+  id: string,
+  status: RequestStatus,
+  actorId: string | null,
+  actorName: string | null,
+) {
+  const updates: Partial<VehicleRequest> = { status };
+  if (status === "Recommended") {
+    updates.recommending_approval_id = actorId;
+    updates.recommending_approval_name = actorName;
+  } else if (status === "Approved" || status === "Rejected") {
+    updates.approver_id = actorId;
+    updates.approver_name = actorName;
+  }
+  const { error } = await supabaseAuth.from("vehicle_requests").update(updates).eq("id", id);
+  if (error) throw error;
+}
+
+// ─── Padala Requests ────────────────────────────────────────
+
+export async function fetchPadalaRequests(): Promise<PadalaRequest[]> {
+  return safeSelect<PadalaRequest>(
+    supabase
+      .from("padala_requests")
+      .select("*")
+      .order("date_prepared", { ascending: false }) as any
+  );
+}
+
+export async function upsertPadalaRequest(req: Partial<PadalaRequest> & {
+  size: PadalaSize;
+  weight_kg: number;
+  description: string;
+  recipient: string;
+}) {
+  const { data, error } = await supabaseAuth
+    .from("padala_requests")
+    .upsert(req)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as PadalaRequest;
+}
+
+// ─── Notifications ──────────────────────────────────────────
+
+export async function fetchNotifications(userId: string | null): Promise<Notification[]> {
+  if (!userId) return [];
+  return safeSelect<Notification>(
+    supabase
+      .from("notifications")
+      .select("*")
+      .or(`user_id.eq.${userId},user_id.is.null`)
+      .order("created_at", { ascending: false })
+      .limit(50) as any
+  );
+}
+
+export async function markNotificationRead(id: string) {
+  const { error } = await supabaseAuth.from("notifications").update({ read: true }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function broadcastNotification(title: string, body: string, link?: string | null) {
+  // user_id = null indicates a site-wide broadcast.
+  const { error } = await supabaseAuth.from("notifications").insert({
+    user_id: null,
+    title,
+    body,
+    link: link ?? null,
+    read: false,
+  });
+  if (error) throw error;
+}

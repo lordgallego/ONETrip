@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 98%;
+    --foreground: 224 32% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 32% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 32% 12%;
+
+    --primary: 220 60% 22%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 224 32% 12%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 12% 50%;
+
+    --accent: 220 50% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 89%;
+    --input: 220 13% 89%;
+    --ring: 220 60% 22%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 220 60% 22%;
+    --sidebar-foreground: 220 20% 95%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 220 60% 22%;
+    --sidebar-accent: 220 55% 28%;
+    --sidebar-accent-foreground: 220 20% 95%;
+    --sidebar-border: 220 50% 30%;
+    --sidebar-ring: 220 60% 22%;
+
+    --success: 152 60% 40%;
+    --warning: 38 92% 50%;
+  }
+
+  .dark {
+    --background: 224 32% 6%;
+    --foreground: 220 20% 95%;
+    --card: 224 32% 9%;
+    --card-foreground: 220 20% 95%;
+    --popover: 224 32% 9%;
+    --popover-foreground: 220 20% 95%;
+    --primary: 220 50% 65%;
+    --primary-foreground: 224 32% 8%;
+    --secondary: 220 20% 15%;
+    --secondary-foreground: 220 20% 95%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 220 12% 60%;
+    --accent: 220 50% 55%;
+    --accent-foreground: 220 20% 95%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 220 50% 45%;
+    --sidebar-background: 224 32% 8%;
+    --sidebar-foreground: 220 20% 90%;
+    --sidebar-primary: 220 50% 65%;
+    --sidebar-primary-foreground: 224 32% 8%;
+    --sidebar-accent: 220 20% 14%;
+    --sidebar-accent-foreground: 220 20% 90%;
+    --sidebar-border: 220 20% 16%;
+    --sidebar-ring: 220 50% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Smoother scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus rings */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  /* Page transition */
+  .page-enter {
+    animation: pageIn 0.2s ease-out;
+  }
+
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Stat card hover */
+  .stat-card {
+    @apply transition-all duration-200;
+  }
+  .stat-card:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  /* Table row hover */
+  .data-row {
+    @apply transition-colors;
+  }
+  .data-row:hover {
+    @apply bg-muted/50;
+  }
+
+  /* Smooth badge */
+  .badge-soft {
+    @apply font-medium tracking-tight;
+  }
+
+  /* Hide scrollbar but keep scrollable (for dock) */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Mesh gradient background for glassmorphism */
+  .mesh-bg {
+    background:
+      radial-gradient(ellipse at 15% 15%, hsl(220, 60%, 92%) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 20%, hsl(200, 50%, 90%) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, hsl(240, 40%, 93%) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, hsl(180, 30%, 91%) 0%, transparent 40%),
+      hsl(220, 20%, 96%);
+  }
+
+  .dark .mesh-bg {
+    background:
+      radial-gradient(ellipse at 15% 15%, hsl(220, 40%, 12%) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 20%, hsl(200, 30%, 10%) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, hsl(240, 25%, 11%) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, hsl(180, 20%, 10%) 0%, transparent 40%),
+      hsl(224, 32%, 6%);
+  }
+}
