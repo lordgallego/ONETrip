@@ -17,7 +17,8 @@ export interface Vehicle {
 export interface VehicleRequest {
   id: string;
   date_prepared: string;          // ISO timestamp
-  destination: string;
+  origin: string | null;          // "From" — departure point
+  destination: string;            // "To"
   purpose: string;
   travel_date: string;            // ISO date
   etd: string;                    // ISO timestamp (estimated time of departure)

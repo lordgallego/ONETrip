@@ -119,6 +119,7 @@ alter table public.vehicles add column if not exists driver_contact text;
 create table if not exists public.vehicle_requests (
   id                            uuid primary key default gen_random_uuid(),
   date_prepared                 timestamptz not null default now(),
+  origin                        text,
   destination                   text not null,
   purpose                       text not null,
   travel_date                   date not null,
@@ -136,6 +137,8 @@ create table if not exists public.vehicle_requests (
   vehicle_name                  text,
   notes                         text
 );
+-- 'origin' (the From location) added later — keep idempotent.
+alter table public.vehicle_requests add column if not exists origin text;
 
 -- ─── Padala (parcel) requests ─────────────────────────────
 create table if not exists public.padala_requests (

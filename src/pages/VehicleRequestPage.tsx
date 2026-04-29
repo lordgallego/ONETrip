@@ -23,6 +23,7 @@ import { combineDateTimePHT } from "@/lib/utils";
 import { toast } from "sonner";
 
 const schema = z.object({
+  origin: z.string().min(2, "Required"),
   destination: z.string().min(2, "Required"),
   purpose: z.string().min(2, "Required"),
   travel_date: z.string().min(1, "Required"),
@@ -58,6 +59,7 @@ const VehicleRequestPage = () => {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      origin: "DOST Region VI Office",
       destination: "",
       purpose: "",
       travel_date: format(new Date(), "yyyy-MM-dd"),
@@ -84,6 +86,7 @@ const VehicleRequestPage = () => {
       const recommender = recommenders.find((u) => u.id === values.recommending_approval_id);
 
       const created = await upsertVehicleRequest({
+        origin: values.origin,
         destination: values.destination,
         purpose: values.purpose,
         travel_date: travelDate,
@@ -106,7 +109,7 @@ const VehicleRequestPage = () => {
         await pushNotification({
           kind: "new_request",
           title: "New travel request on the schedule",
-          body: `${requesterName} → ${values.destination} on ${format(new Date(travelDate), "MMM d")} (${values.etd}–${values.eta})${vehicle ? " · " + vehicle.name : ""}`,
+          body: `${requesterName}: ${values.origin} → ${values.destination} on ${format(new Date(travelDate), "MMM d")} (${values.etd}–${values.eta})${vehicle ? " · " + vehicle.name : ""}`,
           link: tripLink,
         });
       } catch {
@@ -167,15 +170,24 @@ const VehicleRequestPage = () => {
           <CardContent className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="destination">Destination *</Label>
+                <Label htmlFor="origin">From *</Label>
+                <Input id="origin" placeholder="e.g. DOST Region VI Office" {...register("origin")} />
+                {errors.origin && <p className="text-xs text-destructive">{errors.origin.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="destination">To (Destination) *</Label>
                 <Input id="destination" placeholder="e.g. Iloilo City Hall" {...register("destination")} />
                 {errors.destination && <p className="text-xs text-destructive">{errors.destination.message}</p>}
               </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="travel_date">Date of Travel *</Label>
                 <Input id="travel_date" type="date" {...register("travel_date")} />
                 {errors.travel_date && <p className="text-xs text-destructive">{errors.travel_date.message}</p>}
               </div>
+              <div className="hidden sm:block" />
             </div>
 
             <div className="space-y-1.5">

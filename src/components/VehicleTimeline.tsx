@@ -56,12 +56,12 @@ const RANGES: RangePreset[] = [
   { key: "6m", label: "6m", unit: "day",  cells: 183,       cellPx: 18 },
 ];
 
-// Taller rows so the trip blocks have room for the "To: <destination>"
-// label on a second line.
-const ROW_HEIGHT = 76;
+// Tall rows so trip blocks fit From → To, time range, requester, and
+// purpose without truncation at common widths.
+const ROW_HEIGHT = 104;
 const VEHICLE_COL_WIDTH = 220;
-const BLOCK_TOP = 6;
-const BLOCK_HEIGHT = 64;
+const BLOCK_TOP = 8;
+const BLOCK_HEIGHT = 88;
 
 const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) => {
   const [rangeKey, setRangeKey] = useState<RangeKey>("3d");
@@ -387,24 +387,32 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                     borderLeft: `4px solid ${row.palette.hex}`,
                                   }}
                                 >
-                                  <div className="flex flex-col h-full px-2 py-1 gap-0.5 text-left">
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <span className="opacity-80 text-[10px] font-semibold uppercase tracking-wider shrink-0">To:</span>
-                                      <span className="truncate font-semibold">{req.destination}</span>
+                                  <div className="flex flex-col h-full px-2 py-1.5 gap-0.5 text-left">
+                                    {/* FROM */}
+                                    <div className="flex items-center gap-1.5 min-w-0 leading-tight">
+                                      <span className="opacity-75 text-[9px] font-bold uppercase tracking-wider shrink-0 w-7">From</span>
+                                      <span className="truncate text-[11px] font-medium">{req.origin ?? "—"}</span>
+                                    </div>
+                                    {/* TO */}
+                                    <div className="flex items-center gap-1.5 min-w-0 leading-tight">
+                                      <span className="opacity-75 text-[9px] font-bold uppercase tracking-wider shrink-0 w-7">To</span>
+                                      <span className="truncate text-[12px] font-semibold">{req.destination}</span>
                                       {padalaCount > 0 && (
                                         <span className="ml-auto inline-flex items-center gap-0.5 bg-white/25 rounded-sm px-1 text-[10px] shrink-0">
                                           <Package className="h-2.5 w-2.5" /> {padalaCount}
                                         </span>
                                       )}
                                     </div>
-                                    {block.width > 100 && (
-                                      <div className="text-[10px] opacity-90 truncate">
+                                    {/* Time + requester */}
+                                    {block.width > 110 && (
+                                      <div className="text-[10px] opacity-90 truncate leading-tight mt-0.5">
                                         {format(parseISO(req.etd), "HH:mm")}–{format(parseISO(req.eta), "HH:mm")}
                                         {req.requested_by_name ? ` · ${req.requested_by_name}` : ""}
                                       </div>
                                     )}
-                                    {block.width > 160 && req.purpose && (
-                                      <div className="text-[10px] opacity-75 truncate italic">
+                                    {/* Purpose */}
+                                    {block.width > 180 && req.purpose && (
+                                      <div className="text-[10px] opacity-75 truncate italic leading-tight">
                                         {req.purpose}
                                       </div>
                                     )}
@@ -412,9 +420,9 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs">
-                                <div className="space-y-1 text-xs">
+                                <div className="space-y-1.5 text-xs">
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="font-semibold">To: {req.destination}</span>
+                                    <span className="font-semibold">{req.origin ?? "—"} → {req.destination}</span>
                                     <Badge variant="outline" className={`text-[10px] ${status.chip}`}>{status.label}</Badge>
                                   </div>
                                   <p>{req.purpose}</p>

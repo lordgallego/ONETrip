@@ -259,6 +259,8 @@ const Dashboard = () => {
                 <DialogDescription>{selected.purpose}</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <Field label="From">{selected.origin ?? "—"}</Field>
+                <Field label="To">{selected.destination}</Field>
                 <Field label="Status"><Badge variant={STATUS_BADGE[selected.status]}>{selected.status}</Badge></Field>
                 <Field label="Vehicle">{selected.vehicle_name ?? "Unassigned"}</Field>
                 <Field label="Travel Date">{format(parseISO(selected.travel_date), "PPP")}</Field>
@@ -336,7 +338,9 @@ const RecentTrips = ({ title, icon: Icon, tint, items, emptyText, onSelect }: Re
               className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg bg-white/50 border border-border/30 hover:bg-white/80 hover:border-border/60 transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{r.destination}</p>
+                <p className="text-sm font-medium truncate">
+                  {r.origin ? `${r.origin} → ` : ""}{r.destination}
+                </p>
                 <p className="text-xs text-muted-foreground truncate">
                   {format(parseISO(r.travel_date), "MMM d")} · {r.vehicle_name ?? "Unassigned"} · by {r.requested_by_name ?? "—"}
                 </p>
