@@ -8,19 +8,18 @@ interface NotificationContextType {
   unreadCount: number;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
-  pushLocal: (n: { title: string; body?: string; link?: string }) => void;
   refetch: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 /**
- * Site-wide notifications: polls Supabase for new notifications, fires
- * a sonner toast when a fresh one arrives, and exposes the list to the
- * header bell dropdown. Falls back gracefully if the table doesn't exist.
+ * Site-wide notifications: polls Supabase for new entries and fires a
+ * toast for any newly-arrived unread item. The bell only ever shows
+ * DB-backed notifications — no client-only mock rows.
  */
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isApproved } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const lastSeenIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
@@ -31,7 +30,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       // Anything we haven't seen before triggers a toast.
       list.forEach((n) => {
         if (!lastSeenIdsRef.current.has(n.id) && !n.read) {
-          toast(n.title, { description: n.body ?? undefined });
+          toast(n.title, {
+            description: n.body ?? undefined,
+            duration: 6000,
+          });
         }
       });
     }
@@ -41,17 +43,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!isApproved) return;
     refetch();
-    const interval = setInterval(refetch, 20_000);  // poll every 20s
+    // Poll every 15s — short enough to feel live, long enough to not hammer
+    // Supabase. (Realtime channels would be ideal but require enabling the
+    // postgres-changes feature on the project.)
+    const interval = setInterval(refetch, 15_000);
     return () => clearInterval(interval);
-  }, [refetch]);
+  }, [refetch, isApproved]);
 
   const markRead = useCallback(async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     try {
       await markNotificationRead(id);
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     } catch {
-      // ignore — table may not exist
+      // ignore — table may not exist yet, optimistic update is fine
     }
   }, []);
 
@@ -61,31 +67,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     await Promise.allSettled(unread.map((n) => markNotificationRead(n.id)));
   }, [notifications]);
 
-  /**
-   * Optimistic local-only notification (also fires a toast). Useful right
-   * after a successful submit so the user sees immediate feedback even
-   * before the server-side row propagates.
-   */
-  const pushLocal = useCallback((n: { title: string; body?: string; link?: string }) => {
-    toast(n.title, { description: n.body });
-    const local: Notification = {
-      id: `local-${Date.now()}`,
-      user_id: user?.id ?? null,
-      title: n.title,
-      body: n.body ?? null,
-      link: n.link ?? null,
-      kind: "info",
-      read: false,
-      created_at: new Date().toISOString(),
-    };
-    setNotifications((prev) => [local, ...prev]);
-    lastSeenIdsRef.current.add(local.id);
-  }, [user?.id]);
-
   const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, pushLocal, refetch }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, refetch }}>
       {children}
     </NotificationContext.Provider>
   );

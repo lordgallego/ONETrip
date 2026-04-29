@@ -19,6 +19,7 @@ import {
   fetchVehicles, fetchAppUsers, upsertVehicleRequest, pushNotification,
   type Vehicle, type AppUser,
 } from "@/lib/queries";
+import { combineDateTimePHT } from "@/lib/utils";
 import { toast } from "sonner";
 
 const schema = z.object({
@@ -35,7 +36,7 @@ type FormValues = z.infer<typeof schema>;
 
 const VehicleRequestPage = () => {
   const { profile, user } = useAuth();
-  const { pushLocal } = useNotifications();
+  const { refetch: refetchNotifications } = useNotifications();
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [recommenders, setRecommenders] = useState<AppUser[]>([]);
@@ -74,8 +75,11 @@ const VehicleRequestPage = () => {
     setSubmitting(true);
     try {
       const travelDate = values.travel_date;
-      const etd = `${travelDate}T${values.etd}:00`;
-      const eta = `${travelDate}T${values.eta}:00`;
+      // Tag with PHT (+08:00) so Postgres stores the right instant. Without
+      // the offset, naive timestamps get treated as UTC and the timeline
+      // displays them 8 hours ahead.
+      const etd = combineDateTimePHT(travelDate, values.etd);
+      const eta = combineDateTimePHT(travelDate, values.eta);
       const vehicle = vehicles.find((v) => v.id === values.vehicle_id);
       const recommender = recommenders.find((u) => u.id === values.recommending_approval_id);
 
@@ -95,13 +99,15 @@ const VehicleRequestPage = () => {
         vehicle_name: vehicle?.name ?? null,
       });
 
+      const tripLink = `/dashboard?req=${created.id}`;
+
       // Site-wide broadcast so other users see the new trip on the timeline.
       try {
         await pushNotification({
           kind: "new_request",
           title: "New travel request on the schedule",
           body: `${requesterName} → ${values.destination} on ${format(new Date(travelDate), "MMM d")} (${values.etd}–${values.eta})${vehicle ? " · " + vehicle.name : ""}`,
-          link: "/dashboard",
+          link: tripLink,
         });
       } catch {
         // notifications table optional — ignore
@@ -115,24 +121,24 @@ const VehicleRequestPage = () => {
             kind: "status_change",
             title: "You were tagged as recommender",
             body: `${requesterName} listed you as recommending approval on a trip to ${values.destination}.`,
-            link: "/dashboard",
+            link: tripLink,
           });
         } catch {
           // ignore
         }
       }
 
-      pushLocal({
-        title: "Vehicle request submitted",
-        body: `${values.destination} · ${travelDate}`,
-        link: "/dashboard",
-      });
       toast.success("Vehicle request submitted");
-      navigate("/dashboard");
-      // suppress lint about unused created
-      void created;
+      // Pull fresh notifications so the bell + everyone else's bell update on
+      // their next poll.
+      refetchNotifications();
+      navigate(tripLink);
     } catch (e) {
-      toast.error((e as Error).message || "Could not submit request");
+      const msg =
+        (e as { message?: string })?.message ||
+        (e as { details?: string })?.details ||
+        "Could not submit request";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

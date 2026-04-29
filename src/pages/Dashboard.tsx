@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { Car, Package, CalendarRange, CheckCircle2, Clock, ThumbsUp, X, Plus } from "lucide-react";
 import { LiquidGlassCard } from "@/components/ui/liquid-glass-card";
@@ -17,6 +17,7 @@ import {
   type VehicleRequest, type RequestStatus,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
+import { useNotifications } from "@/hooks/use-notifications";
 import { toast } from "sonner";
 
 const STATUS_BADGE: Record<RequestStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -28,7 +29,9 @@ const STATUS_BADGE: Record<RequestStatus, "default" | "secondary" | "outline" | 
 
 const Dashboard = () => {
   const { profile, canRecommend, canApprove } = useAuth();
+  const { refetch: refetchNotifications } = useNotifications();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data, loading, error, refetch } = useFetch(async () => {
     const [vehicles, vehicleRequests, padalaRequests] = await Promise.all([
@@ -74,6 +77,25 @@ const Dashboard = () => {
     [data?.padalaRequests]
   );
 
+  // Deep-link handler: notifications carry ?req=<id> so clicking one
+  // navigates to the dashboard and pops the corresponding trip dialog.
+  useEffect(() => {
+    const reqId = searchParams.get("req");
+    if (!reqId) return;
+    const found = (data?.vehicleRequests ?? []).find((r) => r.id === reqId);
+    if (found) setSelected(found);
+  }, [searchParams, data?.vehicleRequests]);
+
+  // Clearing the dialog also clears ?req from the URL.
+  const clearSelected = () => {
+    setSelected(null);
+    if (searchParams.has("req")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("req");
+      setSearchParams(next, { replace: true });
+    }
+  };
+
   const handleAction = async (req: VehicleRequest, status: RequestStatus) => {
     if (!profile) return;
     setActionLoading(true);
@@ -90,7 +112,7 @@ const Dashboard = () => {
             userId: req.requested_by_id,
             title: `Your trip was ${status.toLowerCase()}`,
             body: `${req.destination} on ${req.travel_date} — by ${profile.name ?? profile.email}`,
-            link: "/dashboard",
+            link: `/dashboard?req=${req.id}`,
           });
         } catch {
           // notifications optional
@@ -98,10 +120,15 @@ const Dashboard = () => {
       }
 
       toast.success(`Marked as ${status}`);
-      setSelected(null);
+      clearSelected();
       refetch();
+      refetchNotifications();
     } catch (e) {
-      toast.error((e as Error).message || "Action failed");
+      const msg =
+        (e as { message?: string })?.message ||
+        (e as { details?: string })?.details ||
+        "Action failed";
+      toast.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -223,7 +250,7 @@ const Dashboard = () => {
       </div>
 
       {/* Detail dialog */}
-      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(o) => !o && clearSelected()}>
         <DialogContent className="max-w-lg">
           {selected && (
             <>

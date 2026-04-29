@@ -36,7 +36,7 @@ type FormValues = z.infer<typeof schema>;
 
 const PadalaRequestPage = () => {
   const { profile, user } = useAuth();
-  const { pushLocal } = useNotifications();
+  const { refetch: refetchNotifications } = useNotifications();
   const navigate = useNavigate();
   const [trips, setTrips] = useState<VehicleRequest[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +108,10 @@ const PadalaRequestPage = () => {
         vehicle_id: linkedTrip?.vehicle_id ?? null,
       });
 
+      // Deep-link target: if a trip is attached, point at that trip;
+      // otherwise just go to the dashboard.
+      const link = linkedTrip ? `/dashboard?req=${linkedTrip.id}` : "/dashboard";
+
       try {
         if (linkedTrip) {
           // Specifically alert the trip's requester so they know a parcel
@@ -116,7 +120,7 @@ const PadalaRequestPage = () => {
             kind: "padala_attached",
             title: "Padala attached to your trip",
             body: `${requesterName} is sending a ${values.size.toLowerCase()} parcel (${values.weight_kg} kg) to ${values.recipient} on your trip to ${linkedTrip.destination}.`,
-            link: "/dashboard",
+            link,
             userId: linkedTrip.requested_by_id,
           });
         } else {
@@ -124,25 +128,23 @@ const PadalaRequestPage = () => {
             kind: "new_request",
             title: "New Padala request",
             body: `${requesterName} → ${values.recipient}${values.destination ? " · " + values.destination : ""} (${values.size}, ${values.weight_kg} kg)`,
-            link: "/dashboard",
+            link,
           });
         }
       } catch {
         // notifications optional — ignore
       }
 
-      pushLocal({
-        title: linkedTrip ? "Padala attached to trip" : "Padala request submitted",
-        body: linkedTrip
-          ? `Riding ${linkedTrip.vehicle_name ?? "trip"} → ${linkedTrip.destination}`
-          : `${values.size} · ${values.weight_kg} kg · ${values.recipient}`,
-        link: "/dashboard",
-      });
       toast.success(linkedTrip ? "Padala attached to trip" : "Padala request submitted");
-      navigate("/dashboard");
+      refetchNotifications();
+      navigate(link);
       void created;
     } catch (e) {
-      toast.error((e as Error).message || "Could not submit request");
+      const msg =
+        (e as { message?: string })?.message ||
+        (e as { details?: string })?.details ||
+        "Could not submit request";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
