@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from "react";
-import { supabase, supabaseAnon } from "./supabase";
+import { supabase, supabaseAnon, isSupabaseConfigured } from "./supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
 /**
@@ -88,6 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
+    // No real Supabase project is wired up yet — skip auth bootstrap
+    // entirely so the login screen can render its config dialog.
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -125,6 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   async function signInWithGoogle() {
+    if (!isSupabaseConfigured) {
+      console.warn("[One Trip] Supabase is not configured — open the 'Configure Database' dialog first.");
+      return;
+    }
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin + "/dashboard" },
