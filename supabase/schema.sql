@@ -156,6 +156,9 @@ create table if not exists public.padala_requests (
 alter table public.padala_requests add column if not exists vehicle_request_id uuid references public.vehicle_requests(id) on delete set null;
 
 -- ─── Notifications (broadcast or per-user) ────────────────
+-- 'app' namespaces notifications so this Supabase project can host
+-- multiple apps without cross-bell pollution. One Trip only ever
+-- inserts/reads with app = 'one_trip'.
 create table if not exists public.notifications (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid references public.app_users(id) on delete cascade,  -- null = broadcast
@@ -163,10 +166,12 @@ create table if not exists public.notifications (
   body        text,
   link        text,
   kind        text not null default 'info' check (kind in ('info','new_request','status_change','padala_attached')),
+  app         text default 'one_trip',
   read        boolean not null default false,
   created_at  timestamptz not null default now()
 );
 alter table public.notifications add column if not exists kind text not null default 'info';
+alter table public.notifications add column if not exists app text;
 
 -- ─── Row Level Security ───────────────────────────────────
 alter table public.app_users        enable row level security;

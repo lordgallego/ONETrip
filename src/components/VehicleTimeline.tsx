@@ -23,15 +23,28 @@ const STATUS_STYLES: Record<RequestStatus, { bar: string; chip: string; ring: st
   Rejected:    { bar: "bg-rose-400/75 hover:bg-rose-500",       chip: "bg-rose-100 text-rose-800 border-rose-300",         ring: "ring-rose-300/40",      label: "Rejected" },
 };
 
+// Per-vehicle palette — used for the row's left rail and the trip block's
+// left edge so you can tell at a glance which vehicle a block belongs to,
+// independent of its status color.
+const VEHICLE_PALETTE = [
+  { id: "blue",    swatch: "bg-blue-500",    text: "text-blue-700",    soft: "bg-blue-50",    border: "border-blue-500",    hex: "#3b82f6" },
+  { id: "purple",  swatch: "bg-purple-500",  text: "text-purple-700",  soft: "bg-purple-50",  border: "border-purple-500",  hex: "#a855f7" },
+  { id: "orange",  swatch: "bg-orange-500",  text: "text-orange-700",  soft: "bg-orange-50",  border: "border-orange-500",  hex: "#f97316" },
+  { id: "cyan",    swatch: "bg-cyan-500",    text: "text-cyan-700",    soft: "bg-cyan-50",    border: "border-cyan-500",    hex: "#06b6d4" },
+  { id: "pink",    swatch: "bg-pink-500",    text: "text-pink-700",    soft: "bg-pink-50",    border: "border-pink-500",    hex: "#ec4899" },
+  { id: "indigo",  swatch: "bg-indigo-500",  text: "text-indigo-700",  soft: "bg-indigo-50",  border: "border-indigo-500",  hex: "#6366f1" },
+  { id: "teal",    swatch: "bg-teal-500",    text: "text-teal-700",    soft: "bg-teal-50",    border: "border-teal-500",    hex: "#14b8a6" },
+  { id: "fuchsia", swatch: "bg-fuchsia-500", text: "text-fuchsia-700", soft: "bg-fuchsia-50", border: "border-fuchsia-500", hex: "#d946ef" },
+];
+const UNASSIGNED_PALETTE = { id: "muted", swatch: "bg-muted-foreground/40", text: "text-muted-foreground", soft: "bg-muted/40", border: "border-muted-foreground/40", hex: "#94a3b8" };
+
 // ─── Range presets ───────────────────────────
 type RangeKey = "1d" | "3d" | "7d" | "1m" | "3m" | "6m";
 interface RangePreset {
   key: RangeKey;
   label: string;
   unit: "hour" | "day";
-  // Number of unit cells to show in the visible window.
   cells: number;
-  // Pixel width of one unit cell.
   cellPx: number;
 }
 const RANGES: RangePreset[] = [
@@ -43,8 +56,12 @@ const RANGES: RangePreset[] = [
   { key: "6m", label: "6m", unit: "day",  cells: 183,       cellPx: 18 },
 ];
 
-const ROW_HEIGHT = 60;
-const VEHICLE_COL_WIDTH = 200;
+// Taller rows so the trip blocks have room for the "To: <destination>"
+// label on a second line.
+const ROW_HEIGHT = 76;
+const VEHICLE_COL_WIDTH = 220;
+const BLOCK_TOP = 6;
+const BLOCK_HEIGHT = 64;
 
 const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) => {
   const [rangeKey, setRangeKey] = useState<RangeKey>("3d");
@@ -54,14 +71,11 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
   const isHourMode = range.unit === "hour";
 
   const totalWidth = range.cells * range.cellPx;
-
-  // Range bounds in milliseconds — used to clip blocks.
   const rangeStart = anchor.getTime();
   const rangeEnd = isHourMode
     ? addDays(anchor, range.cells / 24).getTime()
     : addDays(anchor, range.cells).getTime();
 
-  // Padala counts per vehicle_request_id, for badging the trip block.
   const padalaByTrip = useMemo(() => {
     const m = new Map<string, PadalaRequest[]>();
     for (const p of padala) {
@@ -73,10 +87,33 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
     return m;
   }, [padala]);
 
-  const rows = useMemo(() => {
-    const list = vehicles.map((v) => ({ id: v.id, name: v.name, sub: v.driver_name ?? v.plate_number, plate: v.plate_number }));
+  // Rows = vehicles + (Unassigned bucket if any unassigned trips exist).
+  // Each row carries a deterministic color from VEHICLE_PALETTE based on
+  // its index in the sorted vehicle list, so the same vehicle always shows
+  // the same color across reloads.
+  interface Row {
+    id: string;
+    name: string;
+    sub: string | null;
+    plate: string | null;
+    palette: typeof VEHICLE_PALETTE[number];
+  }
+  const rows: Row[] = useMemo(() => {
+    const list: Row[] = vehicles.map((v, idx) => ({
+      id: v.id,
+      name: v.name,
+      sub: v.driver_name ?? null,
+      plate: v.plate_number,
+      palette: VEHICLE_PALETTE[idx % VEHICLE_PALETTE.length],
+    }));
     if (requests.some((r) => !r.vehicle_id)) {
-      list.push({ id: "__unassigned__", name: "Unassigned", sub: "Awaiting dispatch", plate: null });
+      list.push({
+        id: "__unassigned__",
+        name: "Unassigned",
+        sub: "Awaiting dispatch",
+        plate: null,
+        palette: UNASSIGNED_PALETTE,
+      });
     }
     return list;
   }, [vehicles, requests]);
@@ -107,7 +144,6 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
   const goToday = () =>
     setAnchor(isHourMode ? startOfDay(new Date()) : startOfMonth(new Date()));
 
-  // Pixel position of a date within the timeline.
   const xFor = (when: number): number => {
     if (isHourMode) {
       const minutes = differenceInMinutes(when, rangeStart);
@@ -124,7 +160,7 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
     const clampedStart = Math.max(start, rangeStart);
     const clampedEnd = Math.min(end, rangeEnd);
     const left = xFor(clampedStart);
-    const minWidth = isHourMode ? 24 : range.cellPx * 0.4;
+    const minWidth = isHourMode ? 36 : range.cellPx * 0.5;
     const width = Math.max(minWidth, xFor(clampedEnd) - left);
     return { left, width };
   };
@@ -218,7 +254,6 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                 className="h-7 px-2.5 text-xs"
                 onClick={() => {
                   setRangeKey(r.key);
-                  // Snap anchor sensibly when switching modes.
                   if (r.unit === "day" && isHourMode) setAnchor(startOfMonth(anchor));
                   if (r.unit === "hour" && !isHourMode) setAnchor(startOfDay(new Date()));
                 }}
@@ -229,6 +264,22 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
           </div>
         </div>
       </div>
+
+      {/* Vehicle color legend */}
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="text-muted-foreground">Vehicles:</span>
+          {rows.map((row) => (
+            <span
+              key={row.id}
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${row.palette.soft} ${row.palette.text}`}
+            >
+              <span className={`h-2 w-2 rounded-full ${row.palette.swatch}`} />
+              {row.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Scrollable timeline */}
       <div className="border border-border/40 rounded-xl bg-white/50 backdrop-blur-sm overflow-hidden">
@@ -255,22 +306,27 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                 const reqs = requestsByVehicle.get(row.id) ?? [];
                 return (
                   <div key={row.id} className="flex border-b border-border/30 last:border-b-0">
+                    {/* Row label with vehicle color rail */}
                     <div
                       style={{ width: VEHICLE_COL_WIDTH, height: ROW_HEIGHT }}
-                      className="shrink-0 px-3 flex items-center gap-2 border-r border-border/40 bg-white/40"
+                      className={`shrink-0 flex items-stretch border-r border-border/40 ${row.palette.soft}/30`}
                     >
-                      <div className={`flex h-7 w-7 items-center justify-center rounded-md ${row.id === "__unassigned__" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}`}>
-                        <Car className="h-3.5 w-3.5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold truncate">{row.name}</p>
-                        {row.plate && <p className="text-[10px] text-muted-foreground truncate">{row.plate}</p>}
-                        {row.sub && row.sub !== row.plate && (
-                          <p className="text-[10px] text-muted-foreground truncate">{row.sub}</p>
-                        )}
+                      <div className={`w-1.5 shrink-0 ${row.palette.swatch}`} />
+                      <div className="flex-1 px-3 flex items-center gap-2 min-w-0 bg-white/40">
+                        <div className={`flex h-7 w-7 items-center justify-center rounded-md ${row.palette.soft} ${row.palette.text} shrink-0`}>
+                          <Car className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold truncate">{row.name}</p>
+                          {row.plate && <p className="text-[10px] text-muted-foreground truncate">{row.plate}</p>}
+                          {row.sub && (
+                            <p className="text-[10px] text-muted-foreground truncate">{row.sub}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
+                    {/* Timeline track */}
                     <div className="relative" style={{ width: totalWidth, height: ROW_HEIGHT }}>
                       {/* Cell backgrounds + grid lines */}
                       {isHourMode
@@ -314,7 +370,7 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                       {reqs.map((req) => {
                         const block = computeBlock(req);
                         if (!block) return null;
-                        const style = STATUS_STYLES[req.status] ?? STATUS_STYLES.Pending;
+                        const status = STATUS_STYLES[req.status] ?? STATUS_STYLES.Pending;
                         const padalaCount = padalaByTrip.get(req.id)?.length ?? 0;
                         return (
                           <TooltipProvider key={req.id} delayDuration={150}>
@@ -322,29 +378,52 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => onSelect?.(req)}
-                                  className={`absolute top-2 h-11 rounded-md ring-1 ${style.ring} ${style.bar} text-white text-xs font-medium px-2 flex items-center gap-1.5 overflow-hidden whitespace-nowrap shadow-sm transition-transform hover:scale-[1.01] cursor-pointer`}
-                                  style={{ left: block.left, width: block.width }}
+                                  className={`absolute rounded-md ring-1 ${status.ring} ${status.bar} text-white text-xs font-medium shadow-sm transition-transform hover:scale-[1.01] cursor-pointer overflow-hidden`}
+                                  style={{
+                                    left: block.left,
+                                    width: block.width,
+                                    top: BLOCK_TOP,
+                                    height: BLOCK_HEIGHT,
+                                    borderLeft: `4px solid ${row.palette.hex}`,
+                                  }}
                                 >
-                                  <span className="truncate">{req.destination}</span>
-                                  {padalaCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 bg-white/25 rounded-sm px-1 text-[10px] shrink-0">
-                                      <Package className="h-2.5 w-2.5" /> {padalaCount}
-                                    </span>
-                                  )}
-                                  {block.width > 110 && (
-                                    <span className="opacity-80 truncate hidden sm:inline">· {req.requested_by_name ?? "—"}</span>
-                                  )}
+                                  <div className="flex flex-col h-full px-2 py-1 gap-0.5 text-left">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="opacity-80 text-[10px] font-semibold uppercase tracking-wider shrink-0">To:</span>
+                                      <span className="truncate font-semibold">{req.destination}</span>
+                                      {padalaCount > 0 && (
+                                        <span className="ml-auto inline-flex items-center gap-0.5 bg-white/25 rounded-sm px-1 text-[10px] shrink-0">
+                                          <Package className="h-2.5 w-2.5" /> {padalaCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {block.width > 100 && (
+                                      <div className="text-[10px] opacity-90 truncate">
+                                        {format(parseISO(req.etd), "HH:mm")}–{format(parseISO(req.eta), "HH:mm")}
+                                        {req.requested_by_name ? ` · ${req.requested_by_name}` : ""}
+                                      </div>
+                                    )}
+                                    {block.width > 160 && req.purpose && (
+                                      <div className="text-[10px] opacity-75 truncate italic">
+                                        {req.purpose}
+                                      </div>
+                                    )}
+                                  </div>
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs">
                                 <div className="space-y-1 text-xs">
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="font-semibold">{req.destination}</span>
-                                    <Badge variant="outline" className={`text-[10px] ${style.chip}`}>{style.label}</Badge>
+                                    <span className="font-semibold">To: {req.destination}</span>
+                                    <Badge variant="outline" className={`text-[10px] ${status.chip}`}>{status.label}</Badge>
                                   </div>
                                   <p>{req.purpose}</p>
                                   <p className="text-muted-foreground">
                                     {format(parseISO(req.etd), "MMM d, HH:mm")} → {format(parseISO(req.eta), "MMM d, HH:mm")}
+                                  </p>
+                                  <p className="text-muted-foreground flex items-center gap-1.5">
+                                    <span className={`h-2 w-2 rounded-full ${row.palette.swatch}`} />
+                                    {row.name}
                                   </p>
                                   <p className="text-muted-foreground">By: {req.requested_by_name ?? "—"}</p>
                                   {padalaCount > 0 && (

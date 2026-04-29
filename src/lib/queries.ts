@@ -70,9 +70,14 @@ export interface Notification {
   body: string | null;
   link: string | null;
   kind: NotificationKind;
+  app: string | null;
   read: boolean;
   created_at: string;
 }
+
+/** Namespace for One Trip notifications — keeps this app's bell isolated
+ *  from any other app sharing the same Supabase project. */
+export const ONE_TRIP_APP = "one_trip";
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -193,6 +198,7 @@ export async function fetchNotifications(userId: string | null): Promise<Notific
     supabase
       .from("notifications")
       .select("*")
+      .eq("app", ONE_TRIP_APP)
       .or(`user_id.eq.${userId},user_id.is.null`)
       .order("created_at", { ascending: false })
       .limit(50) as any
@@ -221,6 +227,7 @@ export async function pushNotification(opts: {
     body: opts.body ?? null,
     link: opts.link ?? null,
     kind: opts.kind ?? "info",
+    app: ONE_TRIP_APP,
     read: false,
   });
   if (error) throw error;
