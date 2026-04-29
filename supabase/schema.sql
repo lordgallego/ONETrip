@@ -15,8 +15,14 @@ create table if not exists public.app_users (
 );
 
 -- Auto-register every Google sign-in into public.app_users (Pending).
+-- search_path is pinned to defeat search_path-based privilege escalation
+-- against SECURITY DEFINER functions.
 create or replace function public.handle_new_auth_user()
-returns trigger language plpgsql security definer as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
 begin
   insert into public.app_users (id, email, name, role, is_approved)
   values (
@@ -34,6 +40,67 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_auth_user();
+
+-- ─── RBAC helper functions (used in RLS policies) ─────────
+-- Each is SECURITY DEFINER + locked search_path so the policies stay
+-- correct regardless of the calling user's session settings.
+
+create or replace function public.current_app_user_role()
+returns text
+language sql
+security definer
+set search_path = public, pg_temp
+stable
+as $$
+  select role from public.app_users where id = auth.uid()
+$$;
+
+create or replace function public.is_approved_user()
+returns boolean
+language sql
+security definer
+set search_path = public, pg_temp
+stable
+as $$
+  select coalesce(is_approved, false) from public.app_users where id = auth.uid()
+$$;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public, pg_temp
+stable
+as $$
+  select coalesce(role = 'Admin' and is_approved, false)
+  from public.app_users where id = auth.uid()
+$$;
+
+-- True if caller's role is at least the supplied minimum (and approved).
+create or replace function public.has_role_at_least(min_role text)
+returns boolean
+language sql
+security definer
+set search_path = public, pg_temp
+stable
+as $$
+  with me as (
+    select role, is_approved from public.app_users where id = auth.uid()
+  )
+  select coalesce(
+    me.is_approved and (
+      case me.role
+        when 'Admin'       then min_role in ('Admin','Approver','Recommender','Member')
+        when 'Approver'    then min_role in ('Approver','Recommender','Member')
+        when 'Recommender' then min_role in ('Recommender','Member')
+        when 'Member'      then min_role in ('Member')
+        else false
+      end
+    ),
+    false
+  )
+  from me
+$$;
 
 -- ─── Vehicles (the fleet, with assigned driver) ───────────
 create table if not exists public.vehicles (
@@ -86,7 +153,6 @@ create table if not exists public.padala_requests (
   vehicle_request_id  uuid references public.vehicle_requests(id) on delete set null,
   notes               text
 );
--- Padala can ride along an existing vehicle request (link is optional).
 alter table public.padala_requests add column if not exists vehicle_request_id uuid references public.vehicle_requests(id) on delete set null;
 
 -- ─── Notifications (broadcast or per-user) ────────────────
@@ -109,35 +175,116 @@ alter table public.vehicle_requests enable row level security;
 alter table public.padala_requests  enable row level security;
 alter table public.notifications    enable row level security;
 
-drop policy if exists "anon read app_users"          on public.app_users;
-drop policy if exists "anon read vehicles"           on public.vehicles;
-drop policy if exists "anon read vehicle_requests"   on public.vehicle_requests;
-drop policy if exists "anon read padala_requests"    on public.padala_requests;
-drop policy if exists "anon read notifications"      on public.notifications;
-drop policy if exists "auth insert vehicle_requests" on public.vehicle_requests;
-drop policy if exists "auth insert padala_requests"  on public.padala_requests;
-drop policy if exists "auth insert notifications"    on public.notifications;
-drop policy if exists "auth update vehicle_requests" on public.vehicle_requests;
-drop policy if exists "auth update padala_requests"  on public.padala_requests;
-drop policy if exists "auth update notifications"    on public.notifications;
-drop policy if exists "auth update app_users"        on public.app_users;
-drop policy if exists "auth delete app_users"        on public.app_users;
+-- Drop any existing policies (idempotent re-run).
+drop policy if exists "anon read app_users"           on public.app_users;
+drop policy if exists "anon read vehicles"            on public.vehicles;
+drop policy if exists "anon read vehicle_requests"    on public.vehicle_requests;
+drop policy if exists "anon read padala_requests"     on public.padala_requests;
+drop policy if exists "anon read notifications"       on public.notifications;
 
+drop policy if exists "auth insert vehicle_requests"  on public.vehicle_requests;
+drop policy if exists "auth insert padala_requests"   on public.padala_requests;
+drop policy if exists "auth insert notifications"     on public.notifications;
+
+drop policy if exists "auth update vehicle_requests"  on public.vehicle_requests;
+drop policy if exists "auth update padala_requests"   on public.padala_requests;
+drop policy if exists "auth update notifications"     on public.notifications;
+drop policy if exists "auth update app_users"         on public.app_users;
+drop policy if exists "auth delete app_users"         on public.app_users;
+
+-- Newer hardened policy names (drop too in case of re-run).
+drop policy if exists "admin manages app_users"       on public.app_users;
+drop policy if exists "self updates own row"          on public.app_users;
+drop policy if exists "owner or recommender+ updates trips" on public.vehicle_requests;
+drop policy if exists "approver+ deletes trips"       on public.vehicle_requests;
+drop policy if exists "owner or approver+ updates padala"  on public.padala_requests;
+drop policy if exists "approver+ deletes padala"      on public.padala_requests;
+drop policy if exists "recipient or admin updates notif"   on public.notifications;
+drop policy if exists "admin manages vehicles"        on public.vehicles;
+
+-- ─── PUBLIC READ ──────────────────────────────────────────
+-- Timeline data is intentionally public so anyone (signed-in or not)
+-- can plan around scheduled trips.
 create policy "anon read app_users"        on public.app_users        for select using (true);
 create policy "anon read vehicles"         on public.vehicles         for select using (true);
 create policy "anon read vehicle_requests" on public.vehicle_requests for select using (true);
 create policy "anon read padala_requests"  on public.padala_requests  for select using (true);
 create policy "anon read notifications"    on public.notifications    for select using (true);
 
-create policy "auth insert vehicle_requests" on public.vehicle_requests for insert to authenticated with check (true);
-create policy "auth insert padala_requests"  on public.padala_requests  for insert to authenticated with check (true);
-create policy "auth insert notifications"    on public.notifications    for insert to authenticated with check (true);
+-- ─── INSERTS (any approved authed user) ───────────────────
+create policy "auth insert vehicle_requests" on public.vehicle_requests
+  for insert to authenticated
+  with check (public.is_approved_user());
 
-create policy "auth update vehicle_requests" on public.vehicle_requests for update to authenticated using (true);
-create policy "auth update padala_requests"  on public.padala_requests  for update to authenticated using (true);
-create policy "auth update notifications"    on public.notifications    for update to authenticated using (true);
-create policy "auth update app_users"        on public.app_users        for update to authenticated using (true);
-create policy "auth delete app_users"        on public.app_users        for delete to authenticated using (true);
+create policy "auth insert padala_requests" on public.padala_requests
+  for insert to authenticated
+  with check (public.is_approved_user());
+
+-- Notifications can be inserted by any approved user (the app fans out
+-- broadcasts and per-user pings).
+create policy "auth insert notifications" on public.notifications
+  for insert to authenticated
+  with check (public.is_approved_user());
+
+-- ─── APP_USERS UPDATES / DELETES ──────────────────────────
+-- Only Admins can change roles, approval, or delete users.
+create policy "admin manages app_users" on public.app_users
+  for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "admin deletes app_users" on public.app_users
+  for delete to authenticated
+  using (public.is_admin());
+
+-- ─── VEHICLE REQUEST UPDATES ──────────────────────────────
+-- The owner can edit *their own* trip while it's still Pending.
+-- Recommenders can mark Pending → Recommended.
+-- Approvers (and Admin) can do anything.
+create policy "owner or recommender+ updates trips" on public.vehicle_requests
+  for update to authenticated
+  using (
+    requested_by_id = auth.uid()
+    or public.has_role_at_least('Recommender')
+  )
+  with check (
+    requested_by_id = auth.uid()
+    or public.has_role_at_least('Recommender')
+  );
+
+create policy "approver+ deletes trips" on public.vehicle_requests
+  for delete to authenticated
+  using (public.has_role_at_least('Approver'));
+
+-- ─── PADALA UPDATES ───────────────────────────────────────
+create policy "owner or approver+ updates padala" on public.padala_requests
+  for update to authenticated
+  using (
+    requested_by_id = auth.uid()
+    or public.has_role_at_least('Approver')
+  )
+  with check (
+    requested_by_id = auth.uid()
+    or public.has_role_at_least('Approver')
+  );
+
+create policy "approver+ deletes padala" on public.padala_requests
+  for delete to authenticated
+  using (public.has_role_at_least('Approver'));
+
+-- ─── NOTIFICATIONS UPDATES ────────────────────────────────
+-- The recipient marks their own notification read; admins can update any.
+-- Broadcast (user_id is null) notifications can be marked read by anyone.
+create policy "recipient or admin updates notif" on public.notifications
+  for update to authenticated
+  using (user_id = auth.uid() or user_id is null or public.is_admin())
+  with check (user_id = auth.uid() or user_id is null or public.is_admin());
+
+-- ─── VEHICLES (admin-managed) ─────────────────────────────
+create policy "admin manages vehicles" on public.vehicles
+  for all to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ─── Backfill existing auth users into app_users ──────────
 insert into public.app_users (id, email, name, role, is_approved)
@@ -148,7 +295,7 @@ where u.email is not null
 on conflict (email) do nothing;
 
 -- ─── Seed: DOST WV fleet (drivers + plates) ───────────────
--- Wipes the fleet and re-inserts the canonical list. Safe to re-run.
+-- Wipes and re-inserts the canonical list. Safe to re-run.
 delete from public.vehicles;
 insert into public.vehicles (name, plate_number, capacity, driver_name, driver_contact, active) values
   ('Hi Ace Van (White)',     'SAA 7104', 14, 'RONIE P. GABORNO',       '0967-983-6360', true),

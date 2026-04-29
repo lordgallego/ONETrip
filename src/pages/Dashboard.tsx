@@ -54,6 +54,26 @@ const Dashboard = () => {
     };
   }, [data]);
 
+  // Sorted by date_prepared descending — most recent first.
+  const sortedByDate = useMemo(() => {
+    return [...(data?.vehicleRequests ?? [])].sort((a, b) =>
+      (b.date_prepared ?? "").localeCompare(a.date_prepared ?? "")
+    );
+  }, [data?.vehicleRequests]);
+
+  const recentRecommended = useMemo(
+    () => sortedByDate.filter((r) => r.status === "Recommended").slice(0, 5),
+    [sortedByDate]
+  );
+  const recentApproved = useMemo(
+    () => sortedByDate.filter((r) => r.status === "Approved").slice(0, 5),
+    [sortedByDate]
+  );
+  const recentPadala = useMemo(
+    () => (data?.padalaRequests ?? []).slice(0, 5),
+    [data?.padalaRequests]
+  );
+
   const handleAction = async (req: VehicleRequest, status: RequestStatus) => {
     if (!profile) return;
     setActionLoading(true);
@@ -150,34 +170,57 @@ const Dashboard = () => {
         </CardContent>
       </LiquidGlassCard>
 
-      {/* Recent Padala */}
-      <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4" /> Recent Padala</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data?.padalaRequests.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No padala requests yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {data?.padalaRequests.slice(0, 5).map((p) => (
-                <div key={p.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/50 border border-border/30">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{p.description}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      To {p.recipient}{p.destination ? ` · ${p.destination}` : ""} · by {p.requested_by_name ?? "—"}
-                    </p>
+      {/* Recent activity trackers */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <RecentTrips
+          title="Recently Recommended"
+          icon={ThumbsUp}
+          tint="text-sky-600 bg-sky-100"
+          items={recentRecommended}
+          emptyText="No trips have been recommended yet."
+          onSelect={(r) => setSelected(r)}
+        />
+        <RecentTrips
+          title="Recently Approved"
+          icon={CheckCircle2}
+          tint="text-emerald-600 bg-emerald-100"
+          items={recentApproved}
+          emptyText="No trips have been approved yet."
+          onSelect={(r) => setSelected(r)}
+        />
+        <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md text-amber-600 bg-amber-100">
+                <Package className="h-3.5 w-3.5" />
+              </span>
+              Recent Padala
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentPadala.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No padala requests yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {recentPadala.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/50 border border-border/30">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{p.description}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        To {p.recipient}{p.destination ? ` · ${p.destination}` : ""} · by {p.requested_by_name ?? "—"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className="text-[10px]">{p.size} · {p.weight_kg}kg</Badge>
+                      <Badge variant={STATUS_BADGE[p.status]} className="text-[10px]">{p.status}</Badge>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="outline" className="text-[10px]">{p.size} · {p.weight_kg}kg</Badge>
-                    <Badge variant={STATUS_BADGE[p.status]} className="text-[10px]">{p.status}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </LiquidGlassCard>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </LiquidGlassCard>
+      </div>
 
       {/* Detail dialog */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
@@ -233,6 +276,53 @@ const Field = ({ label, children, className = "" }: { label: string; children: R
     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     <div className="text-sm font-medium mt-0.5">{children}</div>
   </div>
+);
+
+interface RecentTripsProps {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tint: string;
+  items: VehicleRequest[];
+  emptyText: string;
+  onSelect: (req: VehicleRequest) => void;
+}
+
+const RecentTrips = ({ title, icon: Icon, tint, items, emptyText, onSelect }: RecentTripsProps) => (
+  <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base flex items-center gap-2">
+        <span className={`flex h-7 w-7 items-center justify-center rounded-md ${tint}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </span>
+        {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">{emptyText}</p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => onSelect(r)}
+              className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg bg-white/50 border border-border/30 hover:bg-white/80 hover:border-border/60 transition-colors"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{r.destination}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {format(parseISO(r.travel_date), "MMM d")} · {r.vehicle_name ?? "Unassigned"} · by {r.requested_by_name ?? "—"}
+                </p>
+              </div>
+              <Badge variant="outline" className="text-[10px] shrink-0">
+                {format(parseISO(r.etd), "HH:mm")}
+              </Badge>
+            </button>
+          ))}
+        </div>
+      )}
+    </CardContent>
+  </LiquidGlassCard>
 );
 
 export default Dashboard;

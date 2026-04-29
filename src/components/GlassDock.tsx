@@ -2,7 +2,6 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import {
-  LayoutDashboard,
   Car,
   Package,
   ShieldCheck,
@@ -140,8 +139,9 @@ export const GlassDock: React.FC = () => {
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" || location.pathname === "/dashboard" : location.pathname.startsWith(path);
 
+  // Home (logo) already navigates to "/" which is the Dashboard, so we
+  // don't repeat a "Timeline / Dashboard" entry here.
   const navItems = [
-    { icon: <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />, label: "Timeline", href: "/dashboard" },
     { icon: <Car className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />, label: "Travel", href: "/travel-request" },
     { icon: <Package className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />, label: "Padala", href: "/padala-request" },
   ];

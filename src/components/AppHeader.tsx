@@ -1,4 +1,4 @@
-import { ChevronDown, Database, LogOut, User } from "lucide-react";
+import { ChevronDown, Database, LogOut, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,19 +51,21 @@ const AppHeader = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem onClick={() => navigate("/dashboard")}><User className="mr-2 h-4 w-4" />Dashboard</DropdownMenuItem>
             {isAdmin && (
-              <DropdownMenuItem onClick={() => navigate("/admin")}><User className="mr-2 h-4 w-4" />Admin Panel</DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <SupabaseConfigDialog
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Database className="mr-2 h-4 w-4" />Database Settings
+              <>
+                <DropdownMenuItem onClick={() => navigate("/admin")}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />Admin Panel
                 </DropdownMenuItem>
-              }
-            />
-            <DropdownMenuSeparator />
+                <SupabaseConfigDialog
+                  trigger={
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Database className="mr-2 h-4 w-4" />Database Settings
+                    </DropdownMenuItem>
+                  }
+                />
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />Logout
             </DropdownMenuItem>
