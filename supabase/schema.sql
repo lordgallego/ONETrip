@@ -1,5 +1,5 @@
 -- =========================================================
--- One Trip — Vehicle Dispatch & Logistics Management
+-- 1TRIP — Tracking & Routing for Intelligent Planning
 -- Schema + seed for DOST Western Visayas
 -- Safe to re-run.
 -- =========================================================
@@ -160,7 +160,7 @@ alter table public.padala_requests add column if not exists vehicle_request_id u
 
 -- ─── Notifications (broadcast or per-user) ────────────────
 -- 'app' namespaces notifications so this Supabase project can host
--- multiple apps without cross-bell pollution. One Trip only ever
+-- multiple apps without cross-bell pollution. 1TRIP only ever
 -- inserts/reads with app = 'one_trip'.
 --
 -- IMPORTANT: if a table named 'notifications' already exists from a
@@ -189,7 +189,7 @@ alter table public.notifications add column if not exists created_at timestamptz
 
 -- Defuse legacy NOT NULL constraints on columns we don't write to
 -- (e.g. a 'type' column left over from a previous app sharing this DB).
--- Loops over any column on public.notifications outside the One Trip set
+-- Loops over any column on public.notifications outside the 1TRIP set
 -- and drops its NOT NULL so our inserts succeed.
 do $$
 declare col record;

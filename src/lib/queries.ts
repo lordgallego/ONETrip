@@ -76,7 +76,7 @@ export interface Notification {
   created_at: string;
 }
 
-/** Namespace for One Trip notifications — keeps this app's bell isolated
+/** Namespace for 1TRIP notifications — keeps this app's bell isolated
  *  from any other app sharing the same Supabase project. */
 export const ONE_TRIP_APP = "one_trip";
 

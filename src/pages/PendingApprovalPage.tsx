@@ -19,7 +19,7 @@ const PendingApprovalPage = () => {
               Your account <span className="font-medium text-foreground">{user?.email}</span> is awaiting approval from an administrator.
             </p>
             <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-              You'll be able to access One Trip once an administrator has assigned you a role. Please check back later.
+              You'll be able to access 1TRIP once an administrator has assigned you a role. Please check back later.
             </p>
           </div>
           <div className="flex flex-col gap-2 pt-2">

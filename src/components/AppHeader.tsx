@@ -23,11 +23,11 @@ const AppHeader = () => {
   return (
     <header className="h-16 border-b border-border/30 bg-white/70 backdrop-blur-md flex items-center gap-3 px-4 sticky top-0 z-40">
       {/* Brand */}
-      <Link to="/dashboard" className="flex items-center gap-3 mr-2 shrink-0 hover:opacity-90 transition">
-        <img src="/onetrip-logo.png" alt="One Trip" className="h-10 w-10 object-contain" />
+      <Link to="/dashboard" className="flex items-center gap-3 mr-2 shrink-0 hover:opacity-90 transition" title="1TRIP — Tracking & Routing for Intelligent Planning">
+        <img src="/onetrip-logo.png" alt="1TRIP" className="h-10 w-10 object-contain" />
         <div className="hidden sm:flex flex-col leading-tight">
-          <span className="font-bold text-base tracking-tight">One Trip</span>
-          <span className="text-[10px] text-muted-foreground -mt-0.5">One System for Efficient Mobility</span>
+          <span className="font-bold text-base tracking-tight">1TRIP</span>
+          <span className="text-[10px] text-muted-foreground -mt-0.5">Tracking & Routing for Intelligent Planning</span>
         </div>
       </Link>
 

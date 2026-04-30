@@ -1,4 +1,4 @@
--- One Trip seed: DOST Western Visayas fleet (drivers + plates).
+-- 1TRIP seed: DOST Western Visayas fleet (drivers + plates).
 -- The same insert lives at the end of schema.sql so this file is mostly
 -- for reference. Re-running it is safe.
 delete from public.vehicles;

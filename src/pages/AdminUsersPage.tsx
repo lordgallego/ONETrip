@@ -61,7 +61,7 @@ const AdminUsersPage = () => {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
-          <p className="text-sm text-muted-foreground">Approve new sign-ins and assign roles for One Trip.</p>
+          <p className="text-sm text-muted-foreground">Approve new sign-ins and assign roles for 1TRIP.</p>
         </div>
       </div>
 

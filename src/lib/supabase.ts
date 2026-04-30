@@ -47,7 +47,7 @@ export const currentSupabaseUrl = supabaseUrl;
 
 if (!isSupabaseConfigured) {
   console.warn(
-    "[One Trip] Supabase is not configured. Open the login screen and click " +
+    "[1TRIP] Supabase is not configured. Open the login screen and click " +
     "'Configure Database' to enter your project URL and anon key, " +
     "or set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY in .env.local.",
   );

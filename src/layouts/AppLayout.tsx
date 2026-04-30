@@ -16,7 +16,7 @@ const AppLayout = () => {
           <Outlet />
         </main>
         <footer className="fixed bottom-0 left-0 right-0 px-4 py-1.5 text-center text-[10px] text-muted-foreground bg-white/40 backdrop-blur-sm border-t border-border/20 z-30 pointer-events-none">
-          This is One Trip by OneTeam.
+          1TRIP by OneTeam · Tracking & Routing for Intelligent Planning
         </footer>
         <GlassDock />
       </div>

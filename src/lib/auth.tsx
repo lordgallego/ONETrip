@@ -3,7 +3,7 @@ import { supabase, supabaseAnon, isSupabaseConfigured } from "./supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
 /**
- * One Trip RBAC roles, in increasing order of authority:
+ * 1TRIP RBAC roles, in increasing order of authority:
  *  - Member       Submits travel + padala requests, sees the timeline.
  *  - Recommender  Can recommend (endorse) pending requests.
  *  - Approver     Final approve / reject on recommended requests.
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // Fallback: synthesize a stub profile so the auth gate can render the
     // pending-approval screen even if the trigger row hasn't been created yet
-    // (or if the project has not run the One Trip migrations yet).
+    // (or if the project has not run the 1TRIP migrations yet).
     if (authUser) {
       return {
         id: authUser.id,
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signInWithGoogle() {
     if (!isSupabaseConfigured) {
-      console.warn("[One Trip] Supabase is not configured — open the 'Configure Database' dialog first.");
+      console.warn("[1TRIP] Supabase is not configured — open the 'Configure Database' dialog first.");
       return;
     }
     await supabase.auth.signInWithOAuth({

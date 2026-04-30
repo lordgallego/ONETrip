@@ -117,7 +117,7 @@ const HomeButton: React.FC<{ active: boolean }> = ({ active }) => (
       )}
       style={{ transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)" }}
     >
-      <img src="/onetrip-logo.png" alt="One Trip" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain drop-shadow-sm" />
+      <img src="/onetrip-logo.png" alt="1TRIP" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain drop-shadow-sm" />
     </div>
     <span
       className={cn(

@@ -14,11 +14,14 @@ const LoginPage = () => {
         {/* Branding */}
         <div className="text-center space-y-3">
           <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-lg shadow-black/10">
-            <img src="/onetrip-logo.png" alt="One Trip" className="h-20 w-20 object-contain" />
+            <img src="/onetrip-logo.png" alt="1TRIP" className="h-20 w-20 object-contain" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">One Trip</h1>
-            <p className="text-sm font-medium text-muted-foreground mt-1">One System for Efficient Mobility</p>
+            <h1 className="text-3xl font-bold tracking-tight">1TRIP</h1>
+            <p className="text-sm font-medium text-muted-foreground mt-1">
+              <span className="font-semibold">T</span>racking &amp; <span className="font-semibold">R</span>outing
+              for <span className="font-semibold">I</span>ntelligent <span className="font-semibold">P</span>lanning
+            </p>
             <p className="text-xs italic text-muted-foreground mt-1">Every trip tracked. Every decision smarter.</p>
           </div>
         </div>
@@ -30,7 +33,7 @@ const LoginPage = () => {
             <div className="text-xs space-y-1.5 flex-1">
               <p className="font-semibold">Database not connected</p>
               <p className="leading-relaxed">
-                You need to point One Trip at your Supabase project before signing in. Click below to enter your project URL and anon key.
+                You need to point 1TRIP at your Supabase project before signing in. Click below to enter your project URL and anon key.
               </p>
               <SupabaseConfigDialog
                 trigger={
@@ -86,7 +89,7 @@ const LoginPage = () => {
 
         {/* Footer */}
         <p className="text-center text-[11px] text-muted-foreground">
-          This is One Trip by OneTeam.
+          1TRIP by OneTeam
         </p>
       </div>
     </div>
