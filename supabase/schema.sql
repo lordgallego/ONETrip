@@ -233,6 +233,7 @@ drop policy if exists "auth delete app_users"         on public.app_users;
 
 -- Newer hardened policy names (drop too in case of re-run).
 drop policy if exists "admin manages app_users"       on public.app_users;
+drop policy if exists "admin deletes app_users"       on public.app_users;
 drop policy if exists "self updates own row"          on public.app_users;
 drop policy if exists "owner or recommender+ updates trips" on public.vehicle_requests;
 drop policy if exists "approver+ deletes trips"       on public.vehicle_requests;
