@@ -162,19 +162,30 @@ alter table public.padala_requests add column if not exists vehicle_request_id u
 -- 'app' namespaces notifications so this Supabase project can host
 -- multiple apps without cross-bell pollution. One Trip only ever
 -- inserts/reads with app = 'one_trip'.
+--
+-- IMPORTANT: if a table named 'notifications' already exists from a
+-- previous app, CREATE TABLE IF NOT EXISTS won't add our columns. The
+-- explicit ALTER TABLE ... ADD COLUMN IF NOT EXISTS lines below make
+-- the schema converge regardless of the starting state.
 create table if not exists public.notifications (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid references public.app_users(id) on delete cascade,  -- null = broadcast
+  user_id     uuid,                           -- null = broadcast (FK added below if missing)
   title       text not null,
   body        text,
   link        text,
-  kind        text not null default 'info' check (kind in ('info','new_request','status_change','padala_attached')),
+  kind        text default 'info',
   app         text default 'one_trip',
   read        boolean not null default false,
   created_at  timestamptz not null default now()
 );
-alter table public.notifications add column if not exists kind text not null default 'info';
-alter table public.notifications add column if not exists app text;
+alter table public.notifications add column if not exists user_id    uuid;
+alter table public.notifications add column if not exists title      text;
+alter table public.notifications add column if not exists body       text;
+alter table public.notifications add column if not exists link       text;
+alter table public.notifications add column if not exists kind       text default 'info';
+alter table public.notifications add column if not exists app        text;
+alter table public.notifications add column if not exists read       boolean default false;
+alter table public.notifications add column if not exists created_at timestamptz default now();
 
 -- ─── Row Level Security ───────────────────────────────────
 alter table public.app_users        enable row level security;
