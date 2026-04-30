@@ -187,6 +187,26 @@ alter table public.notifications add column if not exists app        text;
 alter table public.notifications add column if not exists read       boolean default false;
 alter table public.notifications add column if not exists created_at timestamptz default now();
 
+-- Defuse legacy NOT NULL constraints on columns we don't write to
+-- (e.g. a 'type' column left over from a previous app sharing this DB).
+-- Loops over any column on public.notifications outside the One Trip set
+-- and drops its NOT NULL so our inserts succeed.
+do $$
+declare col record;
+begin
+  for col in
+    select column_name from information_schema.columns
+    where table_schema = 'public'
+      and table_name   = 'notifications'
+      and is_nullable  = 'NO'
+      and column_name not in (
+        'id','user_id','title','body','link','kind','app','read','created_at'
+      )
+  loop
+    execute format('alter table public.notifications alter column %I drop not null', col.column_name);
+  end loop;
+end $$;
+
 -- ─── Row Level Security ───────────────────────────────────
 alter table public.app_users        enable row level security;
 alter table public.vehicles         enable row level security;
