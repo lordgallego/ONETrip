@@ -136,6 +136,7 @@ const Dashboard = () => {
       // Status changes only DM the requester (not a site-wide broadcast,
       // to avoid swamping the bell with status-change pings everyone can
       // already see on the timeline).
+      let notifyError: string | null = null;
       if (req.requested_by_id) {
         try {
           await pushNotification({
@@ -145,9 +146,12 @@ const Dashboard = () => {
             body: `${req.destination} on ${req.travel_date} — by ${profile.name ?? profile.email}`,
             link: `/dashboard?req=${req.id}`,
           });
-        } catch {
-          // notifications optional
+        } catch (e) {
+          notifyError = (e as { message?: string })?.message ?? "notification failed";
         }
+      }
+      if (notifyError) {
+        toast.warning("Notification didn't fire", { description: notifyError, duration: 12000 });
       }
 
       toast.success(`Marked as ${status}`);
@@ -320,20 +324,38 @@ const Dashboard = () => {
                 ) : <span />}
 
                 <div className="flex flex-wrap gap-2">
+                  {/* Reject is available at every active step for both
+                      Recommenders and Approvers — anyone in the chain can
+                      kill a request that shouldn't proceed. */}
+                  {(canRecommend || canApprove) &&
+                    (selected.status === "Pending" || selected.status === "Recommended") && (
+                      <Button variant="destructive" disabled={actionLoading} onClick={() => handleAction(selected, "Rejected")}>
+                        <X className="h-4 w-4 mr-2" /> Reject
+                      </Button>
+                    )}
+
+                  {/* Step 1: Pending → Recommended (Recommender or higher). */}
                   {canRecommend && selected.status === "Pending" && (
                     <Button variant="outline" disabled={actionLoading} onClick={() => handleAction(selected, "Recommended")}>
                       <ThumbsUp className="h-4 w-4 mr-2" /> Recommend
                     </Button>
                   )}
-                  {canApprove && (selected.status === "Pending" || selected.status === "Recommended") && (
-                    <>
-                      <Button variant="destructive" disabled={actionLoading} onClick={() => handleAction(selected, "Rejected")}>
-                        <X className="h-4 w-4 mr-2" /> Reject
-                      </Button>
-                      <Button disabled={actionLoading} onClick={() => handleAction(selected, "Approved")}>
-                        <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
-                      </Button>
-                    </>
+
+                  {/* Step 2: Recommended → Approved (Approver / Admin only).
+                      Pending requests CANNOT be approved directly — they must
+                      pass through Recommend first. */}
+                  {canApprove && selected.status === "Recommended" && (
+                    <Button disabled={actionLoading} onClick={() => handleAction(selected, "Approved")}>
+                      <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
+                    </Button>
+                  )}
+
+                  {/* Hint when an Approver opens a Pending request — explains
+                      why Approve isn't visible yet. */}
+                  {canApprove && !canRecommend && selected.status === "Pending" && (
+                    <p className="text-[11px] text-muted-foreground italic w-full text-right pt-1">
+                      Awaiting recommendation before approval is allowed.
+                    </p>
                   )}
                 </div>
               </DialogFooter>

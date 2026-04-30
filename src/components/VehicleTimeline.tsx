@@ -287,10 +287,10 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
         <div className="overflow-x-auto">
           <div style={{ minWidth: VEHICLE_COL_WIDTH + totalWidth }}>
             {/* Header row */}
-            <div className="flex sticky top-0 z-10 bg-white/85 backdrop-blur-md border-b border-border/40">
+            <div className="flex sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-border/40">
               <div
-                style={{ width: VEHICLE_COL_WIDTH }}
-                className="shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border/40"
+                style={{ width: VEHICLE_COL_WIDTH, position: "sticky", left: 0 }}
+                className="shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border/40 bg-white/85 backdrop-blur-md z-30"
               >
                 Vehicle / Driver
               </div>
@@ -307,13 +307,19 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                 const reqs = requestsByVehicle.get(row.id) ?? [];
                 return (
                   <div key={row.id} className="flex border-b border-border/30 last:border-b-0">
-                    {/* Row label with vehicle color rail */}
+                    {/* Row label with vehicle color rail — sticky so it stays
+                        visible when the user scrolls horizontally. */}
                     <div
-                      style={{ width: VEHICLE_COL_WIDTH, height: ROW_HEIGHT }}
-                      className={`shrink-0 flex items-stretch border-r border-border/40 ${row.palette.soft}/30`}
+                      style={{
+                        width: VEHICLE_COL_WIDTH,
+                        height: ROW_HEIGHT,
+                        position: "sticky",
+                        left: 0,
+                      }}
+                      className={`shrink-0 flex items-stretch border-r border-border/40 z-10 ${row.palette.soft}/30 bg-white`}
                     >
                       <div className={`w-1.5 shrink-0 ${row.palette.swatch}`} />
-                      <div className="flex-1 px-3 flex items-center gap-2 min-w-0 bg-white/40">
+                      <div className="flex-1 px-3 flex items-center gap-2 min-w-0 bg-white/85 backdrop-blur-sm">
                         <div className={`flex h-7 w-7 items-center justify-center rounded-md ${row.palette.soft} ${row.palette.text} shrink-0`}>
                           <Car className="h-3.5 w-3.5" />
                         </div>

@@ -105,6 +105,10 @@ const VehicleRequestPage = () => {
       const tripLink = `/dashboard?req=${created.id}`;
 
       // Site-wide broadcast so other users see the new trip on the timeline.
+      // Errors are surfaced (rather than silently swallowed) so the user
+      // knows when notifications fail — usually because the schema migration
+      // for app/kind/user_id RLS hasn't been applied to the connected DB.
+      let notifyError: string | null = null;
       try {
         await pushNotification({
           kind: "new_request",
@@ -112,8 +116,8 @@ const VehicleRequestPage = () => {
           body: `${requesterName}: ${values.origin} → ${values.destination} on ${format(new Date(travelDate), "MMM d")} (${values.etd}–${values.eta})${vehicle ? " · " + vehicle.name : ""}`,
           link: tripLink,
         });
-      } catch {
-        // notifications table optional — ignore
+      } catch (e) {
+        notifyError = (e as { message?: string })?.message ?? "broadcast failed";
       }
 
       // DM the chosen recommender so they don't miss it.
@@ -126,14 +130,24 @@ const VehicleRequestPage = () => {
             body: `${requesterName} listed you as recommending approval on a trip to ${values.destination}.`,
             link: tripLink,
           });
-        } catch {
-          // ignore
+        } catch (e) {
+          notifyError = (e as { message?: string })?.message ?? "recommender DM failed";
         }
       }
 
-      toast.success("Vehicle request submitted");
-      // Pull fresh notifications so the bell + everyone else's bell update on
-      // their next poll.
+      toast.success("Vehicle request submitted", {
+        description: recommender
+          ? `${recommender.name ?? recommender.email} has been notified.`
+          : "Visible on the dispatch timeline.",
+      });
+      if (notifyError) {
+        toast.warning("Notification didn't fire", {
+          description: notifyError,
+          duration: 12000,
+        });
+      }
+      // Pull fresh notifications so the bell updates without waiting for
+      // the next poll cycle.
       refetchNotifications();
       navigate(tripLink);
     } catch (e) {

@@ -112,10 +112,9 @@ const PadalaRequestPage = () => {
       // otherwise just go to the dashboard.
       const link = linkedTrip ? `/dashboard?req=${linkedTrip.id}` : "/dashboard";
 
+      let notifyError: string | null = null;
       try {
         if (linkedTrip) {
-          // Specifically alert the trip's requester so they know a parcel
-          // is hitching along.
           await pushNotification({
             kind: "padala_attached",
             title: "Padala attached to your trip",
@@ -131,11 +130,17 @@ const PadalaRequestPage = () => {
             link,
           });
         }
-      } catch {
-        // notifications optional — ignore
+      } catch (e) {
+        notifyError = (e as { message?: string })?.message ?? "notification failed";
       }
 
       toast.success(linkedTrip ? "Padala attached to trip" : "Padala request submitted");
+      if (notifyError) {
+        toast.warning("Notification didn't fire", {
+          description: notifyError,
+          duration: 12000,
+        });
+      }
       refetchNotifications();
       navigate(link);
       void created;

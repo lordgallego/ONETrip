@@ -45,11 +45,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isApproved) return;
     refetch();
-    // Poll every 15s — short enough to feel live, long enough to not hammer
+    // Poll every 10s — short enough to feel live, long enough to not hammer
     // Supabase. (Realtime channels would be ideal but require enabling the
     // postgres-changes feature on the project.)
-    const interval = setInterval(refetch, 15_000);
+    const interval = setInterval(refetch, 10_000);
     return () => clearInterval(interval);
+  }, [refetch, isApproved]);
+
+  // Refetch when the tab regains focus so users coming back from another
+  // window see the latest activity immediately.
+  useEffect(() => {
+    const onFocus = () => { if (isApproved) refetch(); };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [refetch, isApproved]);
 
   const markRead = useCallback(async (id: string) => {

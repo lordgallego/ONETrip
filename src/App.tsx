@@ -70,7 +70,17 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Sonner position="bottom-right" closeButton richColors duration={5500} />
+        {/* zIndex 9999 keeps toasts above the bottom GlassDock (z-50) and
+            sticky timeline columns (z-20). offset pushes them above the
+            footer strip. */}
+        <Sonner
+          position="bottom-right"
+          closeButton
+          richColors
+          duration={5500}
+          offset={64}
+          style={{ zIndex: 9999 } as React.CSSProperties}
+        />
         <BrowserRouter>
           <AuthProvider>
             <AuthGate />
