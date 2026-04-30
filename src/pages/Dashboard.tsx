@@ -372,6 +372,42 @@ const Dashboard = () => {
                 </Field>
               </div>
 
+              {/* Attached padalas — only renders when the selected trip has any. */}
+              {(() => {
+                const linked = (data?.padalaRequests ?? []).filter(
+                  (p) => p.vehicle_request_id === selected.id
+                );
+                if (linked.length === 0) return null;
+                return (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-amber-400 text-amber-950">
+                        <Package className="h-3.5 w-3.5" />
+                      </span>
+                      <span>Padala riding along ({linked.length})</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {linked.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between gap-2 p-2 rounded-md bg-amber-50 border border-amber-200/60 text-xs"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{p.description}</p>
+                            <p className="text-muted-foreground truncate">
+                              To {p.recipient}{p.destination ? ` · ${p.destination}` : ""} · by {p.requested_by_name ?? "—"}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] shrink-0">
+                            {p.size} · {p.weight_kg}kg
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <DialogFooter className="flex-wrap gap-2 sm:justify-between">
                 {/* Admin-only destructive zone */}
                 {isAdmin ? (

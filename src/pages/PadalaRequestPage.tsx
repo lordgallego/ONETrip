@@ -112,9 +112,28 @@ const PadalaRequestPage = () => {
       // otherwise just go to the dashboard.
       const link = linkedTrip ? `/dashboard?req=${linkedTrip.id}` : "/dashboard";
 
+      // Notification fan-out:
+      //   1. ALWAYS broadcast (user_id = null) so every approved user —
+      //      including admins and approvers — sees the new padala on the
+      //      bell and gets a toast.
+      //   2. If the parcel is attached to an existing trip, ALSO DM the
+      //      trip's owner so they know cargo is hitching their dispatch.
       let notifyError: string | null = null;
+      const broadcastBody = linkedTrip
+        ? `${requesterName} attached a ${values.size.toLowerCase()} parcel (${values.weight_kg} kg) for ${values.recipient} to ${linkedTrip.requested_by_name ?? "an existing"} trip → ${linkedTrip.destination}.`
+        : `${requesterName} → ${values.recipient}${values.destination ? " · " + values.destination : ""} (${values.size}, ${values.weight_kg} kg)`;
       try {
-        if (linkedTrip) {
+        await pushNotification({
+          kind: linkedTrip ? "padala_attached" : "new_request",
+          title: linkedTrip ? "Padala attached to a trip" : "New Padala request",
+          body: broadcastBody,
+          link,
+        });
+      } catch (e) {
+        notifyError = (e as { message?: string })?.message ?? "broadcast failed";
+      }
+      if (linkedTrip?.requested_by_id) {
+        try {
           await pushNotification({
             kind: "padala_attached",
             title: "Padala attached to your trip",
@@ -122,16 +141,9 @@ const PadalaRequestPage = () => {
             link,
             userId: linkedTrip.requested_by_id,
           });
-        } else {
-          await pushNotification({
-            kind: "new_request",
-            title: "New Padala request",
-            body: `${requesterName} → ${values.recipient}${values.destination ? " · " + values.destination : ""} (${values.size}, ${values.weight_kg} kg)`,
-            link,
-          });
+        } catch (e) {
+          notifyError = (e as { message?: string })?.message ?? "trip-owner DM failed";
         }
-      } catch (e) {
-        notifyError = (e as { message?: string })?.message ?? "notification failed";
       }
 
       toast.success(linkedTrip ? "Padala attached to trip" : "Padala request submitted");

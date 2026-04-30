@@ -394,7 +394,7 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => onSelect?.(req)}
-                                  className={`absolute rounded-md ring-1 ${status.ring} ${status.bar} text-white text-xs font-medium shadow-sm transition-transform hover:scale-[1.01] cursor-pointer overflow-hidden`}
+                                  className={`absolute rounded-md ring-1 ${status.ring} ${status.bar} text-white text-xs font-medium shadow-sm transition-transform hover:scale-[1.01] cursor-pointer overflow-visible`}
                                   style={{
                                     left: block.left,
                                     width: block.width,
@@ -403,7 +403,21 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                     borderLeft: `4px solid ${row.palette.hex}`,
                                   }}
                                 >
-                                  <div className="flex flex-col h-full px-2 py-1.5 gap-0.5 text-left">
+                                  {/* Padala badge — always visible, in the
+                                      top-right corner, with a high-contrast
+                                      yellow background so it pops against
+                                      every status color (amber, sky,
+                                      emerald, rose). */}
+                                  {padalaCount > 0 && (
+                                    <span
+                                      className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-0.5 bg-amber-400 text-amber-950 rounded-full pl-1 pr-1.5 py-0.5 text-[10px] font-bold shadow ring-2 ring-white"
+                                      title={`${padalaCount} padala riding along`}
+                                    >
+                                      <Package className="h-3 w-3" />
+                                      {padalaCount}
+                                    </span>
+                                  )}
+                                  <div className="flex flex-col h-full px-2 py-1.5 gap-0.5 text-left overflow-hidden">
                                     {/* FROM */}
                                     <div className="flex items-start gap-1.5 min-w-0 leading-tight">
                                       {showLabels && (
@@ -423,11 +437,6 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                       <span className={cn("text-[12px] font-semibold min-w-0 flex-1", allowWrap ? "break-words line-clamp-2" : "truncate")}>
                                         {req.destination}
                                       </span>
-                                      {padalaCount > 0 && (
-                                        <span className="inline-flex items-center gap-0.5 bg-white/25 rounded-sm px-1 text-[10px] shrink-0 mt-px">
-                                          <Package className="h-2.5 w-2.5" /> {padalaCount}
-                                        </span>
-                                      )}
                                     </div>
                                     {/* Time + requester */}
                                     {showTime && (
