@@ -231,9 +231,9 @@ const VehicleRequestPage = () => {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Vehicle (preferred)</Label>
+                <Label>Preferred Vehicle (suggestion only)</Label>
                 <Select value={watch("vehicle_id") || ""} onValueChange={(v) => setValue("vehicle_id", v)}>
-                  <SelectTrigger><SelectValue placeholder={vehicles.length ? "Choose a vehicle" : "No vehicles seeded"} /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={vehicles.length ? "Suggest a vehicle (optional)" : "No vehicles seeded"} /></SelectTrigger>
                   <SelectContent>
                     {vehicles.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
@@ -250,6 +250,9 @@ const VehicleRequestPage = () => {
                     )}
                   </div>
                 )}
+                <p className="text-[10px] text-muted-foreground italic">
+                  Final dispatch is decided by the Admin — this is just a suggestion.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Recommending Approval</Label>

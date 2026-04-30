@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import VehicleTimeline from "@/components/VehicleTimeline";
 import { useFetch } from "@/hooks/use-fetch";
 import {
   fetchVehicles, fetchVehicleRequests, fetchPadalaRequests,
   setVehicleRequestStatus, deleteVehicleRequest, pushNotification,
+  setVehicleAssignment,
   type VehicleRequest, type RequestStatus,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
@@ -80,6 +82,10 @@ const Dashboard = () => {
     () => sortedByDate.filter((r) => r.status === "Approved").slice(0, 5),
     [sortedByDate]
   );
+  const recentRejected = useMemo(
+    () => sortedByDate.filter((r) => r.status === "Rejected").slice(0, 5),
+    [sortedByDate]
+  );
   const recentPadala = useMemo(
     () => (data?.padalaRequests ?? []).slice(0, 5),
     [data?.padalaRequests]
@@ -101,6 +107,28 @@ const Dashboard = () => {
       const next = new URLSearchParams(searchParams);
       next.delete("req");
       setSearchParams(next, { replace: true });
+    }
+  };
+
+  const handleVehicleAssign = async (req: VehicleRequest, vehicleId: string) => {
+    if (!isAdmin) return;
+    const vehicleIdOrNull = vehicleId === "__none__" ? null : vehicleId;
+    const vehicle = (data?.vehicles ?? []).find((v) => v.id === vehicleIdOrNull);
+    setActionLoading(true);
+    try {
+      await setVehicleAssignment(req.id, vehicleIdOrNull, vehicle?.name ?? null);
+      toast.success(vehicleIdOrNull ? `Assigned ${vehicle?.name ?? "vehicle"}` : "Vehicle unassigned");
+      // Update the in-dialog selection too so admin sees the change instantly.
+      setSelected({ ...req, vehicle_id: vehicleIdOrNull, vehicle_name: vehicle?.name ?? null });
+      refetch();
+    } catch (e) {
+      const msg =
+        (e as { message?: string })?.message ||
+        (e as { details?: string })?.details ||
+        "Assignment failed";
+      toast.error(msg);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -233,7 +261,7 @@ const Dashboard = () => {
       </LiquidGlassCard>
 
       {/* Recent activity trackers */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <RecentTrips
           title="Recently Recommended"
           icon={ThumbsUp}
@@ -248,6 +276,14 @@ const Dashboard = () => {
           tint="text-emerald-600 bg-emerald-100"
           items={recentApproved}
           emptyText="No trips have been approved yet."
+          onSelect={(r) => setSelected(r)}
+        />
+        <RecentTrips
+          title="Recently Rejected"
+          icon={X}
+          tint="text-rose-600 bg-rose-100"
+          items={recentRejected}
+          emptyText="No rejections — clean slate."
           onSelect={(r) => setSelected(r)}
         />
         <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
@@ -297,7 +333,33 @@ const Dashboard = () => {
                 <Field label="From">{selected.origin ?? "—"}</Field>
                 <Field label="To">{selected.destination}</Field>
                 <Field label="Status"><Badge variant={STATUS_BADGE[selected.status]}>{selected.status}</Badge></Field>
-                <Field label="Vehicle">{selected.vehicle_name ?? "Unassigned"}</Field>
+                <Field label={isAdmin ? "Vehicle (admin assigns)" : "Vehicle"}>
+                  {isAdmin ? (
+                    <Select
+                      value={selected.vehicle_id ?? "__none__"}
+                      onValueChange={(v) => handleVehicleAssign(selected, v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-full">
+                        <SelectValue placeholder="Choose a vehicle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Unassigned —</SelectItem>
+                        {(data?.vehicles ?? []).map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.name}{v.plate_number ? ` · ${v.plate_number}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <>
+                      {selected.vehicle_name ?? "Unassigned"}
+                      {selected.vehicle_id && (
+                        <span className="ml-2 text-[10px] text-muted-foreground italic">requester preference</span>
+                      )}
+                    </>
+                  )}
+                </Field>
                 <Field label="Travel Date">{format(parseISO(selected.travel_date), "PPP")}</Field>
                 <Field label="ETD → ETA">
                   {format(parseISO(selected.etd), "HH:mm")} → {format(parseISO(selected.eta), "HH:mm")}

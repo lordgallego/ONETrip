@@ -157,6 +157,23 @@ export async function deletePadalaRequest(id: string) {
   if (error) throw error;
 }
 
+/**
+ * Admin override: assign or reassign a vehicle to a request.
+ * The requester's chosen vehicle is just a preference — the admin makes
+ * the final dispatch decision.
+ */
+export async function setVehicleAssignment(
+  requestId: string,
+  vehicleId: string | null,
+  vehicleName: string | null,
+) {
+  const { error } = await supabaseAuth
+    .from("vehicle_requests")
+    .update({ vehicle_id: vehicleId, vehicle_name: vehicleName })
+    .eq("id", requestId);
+  if (error) throw error;
+}
+
 export async function setVehicleRequestStatus(
   id: string,
   status: RequestStatus,
@@ -203,17 +220,45 @@ export async function upsertPadalaRequest(req: Partial<PadalaRequest> & {
 
 // ─── Notifications ──────────────────────────────────────────
 
+function isMissingAppColumn(err: { message?: string; code?: string } | null): boolean {
+  if (!err) return false;
+  // Postgres error 42703 = undefined_column
+  if (err.code === "42703") return true;
+  return /column .*app.* does not exist/i.test(err.message ?? "");
+}
+
+function isMissingTable(err: { message?: string; code?: string } | null): boolean {
+  if (!err) return false;
+  if (err.code === "42P01") return true;
+  return /relation .* does not exist/i.test(err.message ?? "");
+}
+
 export async function fetchNotifications(userId: string | null): Promise<Notification[]> {
   if (!userId) return [];
-  return safeSelect<Notification>(
-    supabase
+  // First try with the app-namespace filter so we ignore foreign-app rows.
+  let res = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("app", ONE_TRIP_APP)
+    .or(`user_id.eq.${userId},user_id.is.null`)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  // If the column hasn't been added yet, fall back to a plain query so the
+  // bell still works while the user runs the migration.
+  if (res.error && isMissingAppColumn(res.error)) {
+    res = await supabase
       .from("notifications")
       .select("*")
-      .eq("app", ONE_TRIP_APP)
       .or(`user_id.eq.${userId},user_id.is.null`)
       .order("created_at", { ascending: false })
-      .limit(50) as any
-  );
+      .limit(50);
+  }
+  if (res.error) {
+    if (isMissingTable(res.error)) return [];
+    throw res.error;
+  }
+  return res.data ?? [];
 }
 
 export async function markNotificationRead(id: string) {
@@ -232,15 +277,24 @@ export async function pushNotification(opts: {
   link?: string;
   kind?: NotificationKind;
 }) {
-  const { error } = await supabaseAuth.from("notifications").insert({
+  const base = {
     user_id: opts.userId ?? null,
     title: opts.title,
     body: opts.body ?? null,
     link: opts.link ?? null,
     kind: opts.kind ?? "info",
-    app: ONE_TRIP_APP,
     read: false,
-  });
+  };
+  // Insert with the namespace tag first; if the schema migration hasn't
+  // added the 'app' column yet, retry without it. Same fallback for 'kind'.
+  let { error } = await supabaseAuth.from("notifications").insert({ ...base, app: ONE_TRIP_APP });
+  if (error && isMissingAppColumn(error)) {
+    ({ error } = await supabaseAuth.from("notifications").insert(base));
+  }
+  if (error && /column .*kind.* does not exist/i.test(error.message ?? "")) {
+    const { kind: _k, ...withoutKind } = base;
+    ({ error } = await supabaseAuth.from("notifications").insert(withoutKind));
+  }
   if (error) throw error;
 }
 
