@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Car, Package, CalendarRange, CheckCircle2, Clock, ThumbsUp, X, Plus, Trash2 } from "lucide-react";
+import { Car, Package, CalendarRange, CheckCircle2, Clock, ThumbsUp, X, Plus, Trash2, ArrowRight } from "lucide-react";
 import { LiquidGlassCard } from "@/components/ui/liquid-glass-card";
 import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,14 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { useNotifications } from "@/hooks/use-notifications";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const STATUS_BADGE: Record<RequestStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  Pending: "secondary",
-  Recommended: "default",
-  Approved: "default",
-  Rejected: "destructive",
+const STATUS_BADGE_STYLE: Record<RequestStatus, string> = {
+  Pending:     "border-[#F2B53A]/60 bg-[#F2B53A]/20 text-[#8A5A00] dark:text-[#F2B53A]",
+  Recommended: "border-sky-400/50 bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  Approved:    "border-[#A9CDBE] bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/20 dark:text-[#A9CDBE]",
+  Rejected:    "border-destructive/50 bg-destructive/15 text-destructive",
 };
 
 const Dashboard = () => {
@@ -59,15 +60,11 @@ const Dashboard = () => {
     };
   }, [data]);
 
-  // Rejected trips drop off the timeline immediately (the public schedule
-  // shouldn't be cluttered with refused requests). They remain in the DB
-  // for audit / status_change-notification deep-links.
   const timelineTrips = useMemo(
     () => (data?.vehicleRequests ?? []).filter((r) => r.status !== "Rejected"),
     [data?.vehicleRequests]
   );
 
-  // Sorted by date_prepared descending — most recent first.
   const sortedByDate = useMemo(() => {
     return [...(data?.vehicleRequests ?? [])].sort((a, b) =>
       (b.date_prepared ?? "").localeCompare(a.date_prepared ?? "")
@@ -91,8 +88,6 @@ const Dashboard = () => {
     [data?.padalaRequests]
   );
 
-  // Deep-link handler: notifications carry ?req=<id> so clicking one
-  // navigates to the dashboard and pops the corresponding trip dialog.
   useEffect(() => {
     const reqId = searchParams.get("req");
     if (!reqId) return;
@@ -100,7 +95,6 @@ const Dashboard = () => {
     if (found) setSelected(found);
   }, [searchParams, data?.vehicleRequests]);
 
-  // Clearing the dialog also clears ?req from the URL.
   const clearSelected = () => {
     setSelected(null);
     if (searchParams.has("req")) {
@@ -118,7 +112,6 @@ const Dashboard = () => {
     try {
       await setVehicleAssignment(req.id, vehicleIdOrNull, vehicle?.name ?? null);
       toast.success(vehicleIdOrNull ? `Assigned ${vehicle?.name ?? "vehicle"}` : "Vehicle unassigned");
-      // Update the in-dialog selection too so admin sees the change instantly.
       setSelected({ ...req, vehicle_id: vehicleIdOrNull, vehicle_name: vehicle?.name ?? null });
       refetch();
     } catch (e) {
@@ -161,9 +154,6 @@ const Dashboard = () => {
     try {
       await setVehicleRequestStatus(req.id, status, profile.id, profile.name ?? profile.email);
 
-      // Status changes only DM the requester (not a site-wide broadcast,
-      // to avoid swamping the bell with status-change pings everyone can
-      // already see on the timeline).
       let notifyError: string | null = null;
       if (req.requested_by_id) {
         try {
@@ -198,53 +188,119 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 page-enter">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dispatch Timeline</h1>
-          <p className="text-sm text-muted-foreground">
-            Live multi-vehicle schedule. Pending, Recommended, and Approved trips all appear here so everyone can plan around conflicts.
+    <div className="p-4 sm:p-6 max-w-[1600px] mx-auto space-y-6 page-enter">
+      {/* Header + Actions */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#A9CDBE]/60 bg-[#A9CDBE]/25 px-3 py-0.5 text-xs font-medium text-[#1A4D3B] dark:border-[#A9CDBE]/30 dark:bg-[#A9CDBE]/10 dark:text-[#A9CDBE]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#256D54] dark:bg-[#A9CDBE] animate-pulse" />
+            Live Fleet Dispatch
+          </div>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">Dispatch Timeline</h1>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Live multi-vehicle schedule. Pending, Recommended, and Approved trips stay visible so every team can coordinate routes and ride-along parcels.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/padala-request")}>
-            <Package className="h-4 w-4 mr-2" /> New Padala
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/padala-request")}
+            className="border-[#F2B53A]/70 bg-[#F2B53A]/15 text-[#0B1325] hover:bg-[#F2B53A]/30 dark:bg-[#F2B53A]/15 dark:text-[#F2B53A] dark:hover:bg-[#F2B53A]/25 font-semibold"
+          >
+            <Package className="h-4 w-4 mr-2 text-[#B87D0A] dark:text-[#F2B53A]" />
+            Attach Padala
           </Button>
-          <Button onClick={() => navigate("/travel-request")}>
+          <Button onClick={() => navigate("/travel-request")} className="font-semibold shadow-sm">
             <Plus className="h-4 w-4 mr-2" /> New Travel Request
           </Button>
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          { label: "Active Vehicles", value: stats.vehicleCount, icon: Car, color: "text-blue-600" },
-          { label: "Pending",         value: stats.pending,      icon: Clock, color: "text-amber-600" },
-          { label: "Recommended",     value: stats.recommended,  icon: ThumbsUp, color: "text-sky-600" },
-          { label: "Approved",        value: stats.approved,     icon: CheckCircle2, color: "text-emerald-600" },
-          { label: "Padala",          value: stats.padalaCount,  icon: Package, color: "text-violet-600" },
-        ].map((m) => (
-          <LiquidGlassCard key={m.label} glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg">
-            <div className="p-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{m.label}</span>
-                <m.icon className={`h-4 w-4 ${m.color}`} />
-              </div>
-              <p className="text-2xl font-bold tracking-tight mt-2">{m.value}</p>
+      {/* Asymmetric Fleet Telemetry Strip */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Primary Fleet Capacity Tile (Sage Accent) */}
+        <LiquidGlassCard glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg" className="lg:col-span-3">
+          <div className="p-5 flex items-center justify-between h-full">
+            <div>
+              <span className="text-xs font-medium text-muted-foreground">Active Vehicles</span>
+              <p className="font-mono text-3xl font-bold tracking-tight mt-1 tabular-nums">{stats.vehicleCount}</p>
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1D5944] dark:text-[#A9CDBE] mt-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#256D54] dark:bg-[#A9CDBE]" />
+                Regional fleet online
+              </span>
             </div>
-          </LiquidGlassCard>
-        ))}
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] ring-1 ring-[#A9CDBE]/50">
+              <Car className="h-6 w-6" />
+            </div>
+          </div>
+        </LiquidGlassCard>
+
+        {/* Dispatch Approval Pipeline Tile */}
+        <LiquidGlassCard glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg" className="lg:col-span-6">
+          <div className="p-5 h-full flex flex-col justify-between gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Dispatch Queue</span>
+              <span className="text-[11px] text-muted-foreground">Pending → Recommended → Approved</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3 items-center">
+              <div className="rounded-xl border border-[#F2B53A]/45 bg-[#F2B53A]/15 dark:bg-[#F2B53A]/10 px-3.5 py-2.5">
+                <div className="flex items-center justify-between text-xs font-medium text-[#8A5A00] dark:text-[#F2B53A]">
+                  <span>Pending</span>
+                  <Clock className="h-3.5 w-3.5" />
+                </div>
+                <p className="font-mono text-2xl font-bold tabular-nums mt-0.5">{stats.pending}</p>
+              </div>
+              <div className="rounded-xl border border-sky-400/35 bg-sky-500/10 px-3.5 py-2.5">
+                <div className="flex items-center justify-between text-xs font-medium text-sky-700 dark:text-sky-300">
+                  <span>Recommended</span>
+                  <ThumbsUp className="h-3.5 w-3.5" />
+                </div>
+                <p className="font-mono text-2xl font-bold tabular-nums mt-0.5">{stats.recommended}</p>
+              </div>
+              <div className="rounded-xl border border-[#A9CDBE]/60 bg-[#A9CDBE]/25 dark:bg-[#A9CDBE]/15 px-3.5 py-2.5">
+                <div className="flex items-center justify-between text-xs font-medium text-[#1A4D3B] dark:text-[#A9CDBE]">
+                  <span>Approved</span>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </div>
+                <p className="font-mono text-2xl font-bold tabular-nums mt-0.5">{stats.approved}</p>
+              </div>
+            </div>
+          </div>
+        </LiquidGlassCard>
+
+        {/* Padala Tile (Signal Gold Accent) */}
+        <LiquidGlassCard glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg" className="lg:col-span-3">
+          <div className="p-5 flex items-center justify-between h-full">
+            <div>
+              <span className="text-xs font-medium text-muted-foreground">Padala Parcels</span>
+              <p className="font-mono text-3xl font-bold tracking-tight mt-1 tabular-nums">{stats.padalaCount}</p>
+              <button
+                type="button"
+                onClick={() => navigate("/padala-request")}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9C6500] dark:text-[#F2B53A] hover:underline mt-1"
+              >
+                Send a parcel <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2B53A]/25 text-[#8A5A00] dark:bg-[#F2B53A]/20 dark:text-[#F2B53A] ring-1 ring-[#F2B53A]/50">
+              <Package className="h-6 w-6" />
+            </div>
+          </div>
+        </LiquidGlassCard>
       </div>
 
-      {/* Timeline */}
-      <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
-        <CardHeader className="flex-row items-center gap-2 pb-3">
-          <CalendarRange className="h-4 w-4 text-muted-foreground" />
-          <CardTitle className="text-base">Multi-Vehicle Schedule</CardTitle>
-          <CardDescription className="ml-auto text-xs">Click any block for details.</CardDescription>
+      {/* Hero: Multi-Vehicle Schedule Timeline */}
+      <LiquidGlassCard glowIntensity="md" shadowIntensity="md" blurIntensity="lg">
+        <CardHeader className="flex-row items-center gap-2.5 pb-3 border-b border-border/40">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE]">
+            <CalendarRange className="h-4 w-4" />
+          </div>
+          <div>
+            <CardTitle className="text-base font-display">Multi-Vehicle Schedule</CardTitle>
+            <CardDescription className="text-xs">Select any trip block to inspect details, assign a vehicle, or update approval status.</CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           {loading ? (
             <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">Loading timeline…</div>
           ) : error ? (
@@ -265,7 +321,7 @@ const Dashboard = () => {
         <RecentTrips
           title="Recently Recommended"
           icon={ThumbsUp}
-          tint="text-sky-600 bg-sky-100"
+          tint="text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-500/15"
           items={recentRecommended}
           emptyText="No trips have been recommended yet."
           onSelect={(r) => setSelected(r)}
@@ -273,7 +329,7 @@ const Dashboard = () => {
         <RecentTrips
           title="Recently Approved"
           icon={CheckCircle2}
-          tint="text-emerald-600 bg-emerald-100"
+          tint="text-[#1A4D3B] bg-[#A9CDBE]/35 dark:text-[#A9CDBE] dark:bg-[#A9CDBE]/15"
           items={recentApproved}
           emptyText="No trips have been approved yet."
           onSelect={(r) => setSelected(r)}
@@ -281,15 +337,15 @@ const Dashboard = () => {
         <RecentTrips
           title="Recently Rejected"
           icon={X}
-          tint="text-rose-600 bg-rose-100"
+          tint="text-rose-700 bg-rose-100 dark:text-rose-300 dark:bg-rose-500/15"
           items={recentRejected}
           emptyText="No rejections — clean slate."
           onSelect={(r) => setSelected(r)}
         />
         <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md text-amber-600 bg-amber-100">
+            <CardTitle className="text-base font-display flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md text-[#8A5A00] bg-[#F2B53A]/30 dark:text-[#F2B53A] dark:bg-[#F2B53A]/15">
                 <Package className="h-3.5 w-3.5" />
               </span>
               Recent Padala
@@ -301,16 +357,19 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-2">
                 {recentPadala.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white/50 border border-border/30">
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-background/60 dark:bg-[#0B1325]/60 border border-border/50"
+                  >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{p.description}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         To {p.recipient}{p.destination ? ` · ${p.destination}` : ""} · by {p.requested_by_name ?? "—"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className="text-[10px]">{p.size} · {p.weight_kg}kg</Badge>
-                      <Badge variant={STATUS_BADGE[p.status]} className="text-[10px]">{p.status}</Badge>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge variant="outline" className="font-mono text-[10px]">{p.size} · {p.weight_kg}kg</Badge>
+                      <Badge variant="outline" className={cn("text-[10px]", STATUS_BADGE_STYLE[p.status])}>{p.status}</Badge>
                     </div>
                   </div>
                 ))}
@@ -326,13 +385,17 @@ const Dashboard = () => {
           {selected && (
             <>
               <DialogHeader>
-                <DialogTitle>{selected.destination}</DialogTitle>
+                <DialogTitle className="font-display">{selected.destination}</DialogTitle>
                 <DialogDescription>{selected.purpose}</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <Field label="From">{selected.origin ?? "—"}</Field>
                 <Field label="To">{selected.destination}</Field>
-                <Field label="Status"><Badge variant={STATUS_BADGE[selected.status]}>{selected.status}</Badge></Field>
+                <Field label="Status">
+                  <Badge variant="outline" className={STATUS_BADGE_STYLE[selected.status]}>
+                    {selected.status}
+                  </Badge>
+                </Field>
                 <Field label={isAdmin ? "Vehicle (admin assigns)" : "Vehicle"}>
                   {isAdmin ? (
                     <Select
@@ -362,7 +425,9 @@ const Dashboard = () => {
                 </Field>
                 <Field label="Travel Date">{format(parseISO(selected.travel_date), "PPP")}</Field>
                 <Field label="ETD → ETA">
-                  {format(parseISO(selected.etd), "HH:mm")} → {format(parseISO(selected.eta), "HH:mm")}
+                  <span className="font-mono tabular-nums">
+                    {format(parseISO(selected.etd), "HH:mm")} → {format(parseISO(selected.eta), "HH:mm")}
+                  </span>
                 </Field>
                 <Field label="Requested By">{selected.requested_by_name ?? "—"}</Field>
                 <Field label="Recommending">{selected.recommending_approval_name ?? "—"}</Field>
@@ -372,7 +437,7 @@ const Dashboard = () => {
                 </Field>
               </div>
 
-              {/* Attached padalas — only renders when the selected trip has any. */}
+              {/* Attached padalas */}
               {(() => {
                 const linked = (data?.padalaRequests ?? []).filter(
                   (p) => p.vehicle_request_id === selected.id
@@ -381,7 +446,7 @@ const Dashboard = () => {
                 return (
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-amber-400 text-amber-950">
+                      <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-[#F2B53A] text-[#0B1325]">
                         <Package className="h-3.5 w-3.5" />
                       </span>
                       <span>Padala riding along ({linked.length})</span>
@@ -390,7 +455,7 @@ const Dashboard = () => {
                       {linked.map((p) => (
                         <div
                           key={p.id}
-                          className="flex items-center justify-between gap-2 p-2 rounded-md bg-amber-50 border border-amber-200/60 text-xs"
+                          className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[#F2B53A]/15 dark:bg-[#F2B53A]/10 border border-[#F2B53A]/40 text-xs"
                         >
                           <div className="min-w-0 flex-1">
                             <p className="font-medium truncate">{p.description}</p>
@@ -398,7 +463,7 @@ const Dashboard = () => {
                               To {p.recipient}{p.destination ? ` · ${p.destination}` : ""} · by {p.requested_by_name ?? "—"}
                             </p>
                           </div>
-                          <Badge variant="outline" className="text-[10px] shrink-0">
+                          <Badge variant="outline" className="font-mono text-[10px] shrink-0 border-[#F2B53A]/50">
                             {p.size} · {p.weight_kg}kg
                           </Badge>
                         </div>
@@ -409,7 +474,6 @@ const Dashboard = () => {
               })()}
 
               <DialogFooter className="flex-wrap gap-2 sm:justify-between">
-                {/* Admin-only destructive zone */}
                 {isAdmin ? (
                   <Button
                     variant="ghost"
@@ -422,9 +486,6 @@ const Dashboard = () => {
                 ) : <span />}
 
                 <div className="flex flex-wrap gap-2">
-                  {/* Reject is available at every active step for both
-                      Recommenders and Approvers — anyone in the chain can
-                      kill a request that shouldn't proceed. */}
                   {(canRecommend || canApprove) &&
                     (selected.status === "Pending" || selected.status === "Recommended") && (
                       <Button variant="destructive" disabled={actionLoading} onClick={() => handleAction(selected, "Rejected")}>
@@ -432,24 +493,18 @@ const Dashboard = () => {
                       </Button>
                     )}
 
-                  {/* Step 1: Pending → Recommended (Recommender or higher). */}
                   {canRecommend && selected.status === "Pending" && (
                     <Button variant="outline" disabled={actionLoading} onClick={() => handleAction(selected, "Recommended")}>
                       <ThumbsUp className="h-4 w-4 mr-2" /> Recommend
                     </Button>
                   )}
 
-                  {/* Step 2: Recommended → Approved (Approver / Admin only).
-                      Pending requests CANNOT be approved directly — they must
-                      pass through Recommend first. */}
                   {canApprove && selected.status === "Recommended" && (
                     <Button disabled={actionLoading} onClick={() => handleAction(selected, "Approved")}>
                       <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
                     </Button>
                   )}
 
-                  {/* Hint when an Approver opens a Pending request — explains
-                      why Approve isn't visible yet. */}
                   {canApprove && !canRecommend && selected.status === "Pending" && (
                     <p className="text-[11px] text-muted-foreground italic w-full text-right pt-1">
                       Awaiting recommendation before approval is allowed.
@@ -484,8 +539,8 @@ interface RecentTripsProps {
 const RecentTrips = ({ title, icon: Icon, tint, items, emptyText, onSelect }: RecentTripsProps) => (
   <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
     <CardHeader className="pb-3">
-      <CardTitle className="text-base flex items-center gap-2">
-        <span className={`flex h-7 w-7 items-center justify-center rounded-md ${tint}`}>
+      <CardTitle className="text-base font-display flex items-center gap-2">
+        <span className={cn("flex h-7 w-7 items-center justify-center rounded-md", tint)}>
           <Icon className="h-3.5 w-3.5" />
         </span>
         {title}
@@ -500,7 +555,7 @@ const RecentTrips = ({ title, icon: Icon, tint, items, emptyText, onSelect }: Re
             <button
               key={r.id}
               onClick={() => onSelect(r)}
-              className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-lg bg-white/50 border border-border/30 hover:bg-white/80 hover:border-border/60 transition-colors"
+              className="w-full text-left flex items-start justify-between gap-3 p-3 rounded-xl bg-background/60 dark:bg-[#0B1325]/60 border border-border/50 hover:bg-[#A9CDBE]/15 dark:hover:bg-[#172544] hover:border-[#A9CDBE]/60 transition-colors"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">
@@ -510,7 +565,7 @@ const RecentTrips = ({ title, icon: Icon, tint, items, emptyText, onSelect }: Re
                   {format(parseISO(r.travel_date), "MMM d")} · {r.vehicle_name ?? "Unassigned"} · by {r.requested_by_name ?? "—"}
                 </p>
               </div>
-              <Badge variant="outline" className="text-[10px] shrink-0">
+              <Badge variant="outline" className="font-mono text-[10px] shrink-0 tabular-nums">
                 {format(parseISO(r.etd), "HH:mm")}
               </Badge>
             </button>

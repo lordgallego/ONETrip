@@ -44,8 +44,6 @@ const PadalaRequestPage = () => {
 
   const requesterName = profile?.name || user?.user_metadata?.full_name || user?.email || "—";
 
-  // Upcoming trips that haven't been rejected — these are what a Padala
-  // sender can ride along with.
   useEffect(() => {
     fetchVehicleRequests()
       .then((all) => {
@@ -83,7 +81,6 @@ const PadalaRequestPage = () => {
     [tripId, trips]
   );
 
-  // Auto-populate destination when a trip is selected.
   useEffect(() => {
     if (selectedTrip) setValue("destination", selectedTrip.destination);
   }, [selectedTrip, setValue]);
@@ -108,16 +105,8 @@ const PadalaRequestPage = () => {
         vehicle_id: linkedTrip?.vehicle_id ?? null,
       });
 
-      // Deep-link target: if a trip is attached, point at that trip;
-      // otherwise just go to the dashboard.
       const link = linkedTrip ? `/dashboard?req=${linkedTrip.id}` : "/dashboard";
 
-      // Notification fan-out:
-      //   1. ALWAYS broadcast (user_id = null) so every approved user —
-      //      including admins and approvers — sees the new padala on the
-      //      bell and gets a toast.
-      //   2. If the parcel is attached to an existing trip, ALSO DM the
-      //      trip's owner so they know cargo is hitching their dispatch.
       let notifyError: string | null = null;
       const broadcastBody = linkedTrip
         ? `${requesterName} attached a ${values.size.toLowerCase()} parcel (${values.weight_kg} kg) for ${values.recipient} to ${linkedTrip.requested_by_name ?? "an existing"} trip → ${linkedTrip.destination}.`
@@ -168,14 +157,14 @@ const PadalaRequestPage = () => {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto page-enter">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto page-enter">
+      <div className="flex items-center gap-3.5 mb-6">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#F2B53A]/25 text-[#8A5A00] dark:bg-[#F2B53A]/15 dark:text-[#F2B53A] ring-1 ring-[#F2B53A]/50">
           <Package className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Submit Padala (Parcel)</h1>
-          <p className="text-sm text-muted-foreground">Send an item — optionally riding along an existing trip.</p>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Submit Padala (Parcel)</h1>
+          <p className="text-sm text-muted-foreground">Send an item — optionally riding along an existing scheduled trip.</p>
         </div>
       </div>
 
@@ -183,9 +172,12 @@ const PadalaRequestPage = () => {
         {/* Ride-along selector */}
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2"><Truck className="h-4 w-4" /> Ride along an existing trip?</CardTitle>
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <Truck className="h-4 w-4 text-[#1D5944] dark:text-[#A9CDBE]" />
+              Ride along an existing trip?
+            </CardTitle>
             <CardDescription>
-              If a vehicle is already heading to your destination, attach your parcel to that trip instead of dispatching a new vehicle.
+              If a vehicle is already heading to your destination, attach your parcel instead of dispatching a new trip.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -208,19 +200,21 @@ const PadalaRequestPage = () => {
             </Select>
 
             {selectedTrip && (
-              <div className="p-3 rounded-lg bg-primary/5 border border-primary/15 text-xs space-y-1">
+              <div className="p-3.5 rounded-xl bg-[#A9CDBE]/20 dark:bg-[#A9CDBE]/10 border border-[#A9CDBE]/50 dark:border-[#A9CDBE]/30 text-xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{selectedTrip.destination}</span>
-                  <Badge variant="outline" className="text-[10px]">{selectedTrip.status}</Badge>
+                  <span className="font-semibold text-foreground">{selectedTrip.destination}</span>
+                  <Badge variant="outline" className="text-[10px] border-[#A9CDBE] text-[#1A4D3B] dark:text-[#A9CDBE]">
+                    {selectedTrip.status}
+                  </Badge>
                 </div>
-                <p className="text-muted-foreground">
+                <p className="font-mono text-muted-foreground tabular-nums">
                   {format(parseISO(selectedTrip.etd), "EEE, MMM d · HH:mm")} → {format(parseISO(selectedTrip.eta), "HH:mm")}
                 </p>
                 <p className="text-muted-foreground">
                   {selectedTrip.vehicle_name ?? "Vehicle TBD"} · Requested by {selectedTrip.requested_by_name ?? "—"}
                 </p>
-                <p className="text-[11px] text-primary mt-1">
-                  Your padala will be linked to this trip. {selectedTrip.requested_by_name ? `${selectedTrip.requested_by_name} will be notified.` : ""}
+                <p className="text-[11px] font-medium text-[#1A4D3B] dark:text-[#A9CDBE] pt-1">
+                  Your padala will link to this trip. {selectedTrip.requested_by_name ? `${selectedTrip.requested_by_name} will be notified.` : ""}
                 </p>
               </div>
             )}
@@ -229,9 +223,9 @@ const PadalaRequestPage = () => {
 
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
           <CardHeader>
-            <CardTitle className="text-base">Parcel Details</CardTitle>
+            <CardTitle className="font-display text-base">Parcel Details</CardTitle>
             <CardDescription>
-              Date Prepared: <Badge variant="outline" className="ml-1">{format(submittedAt, "PPpp")}</Badge>
+              Date Prepared: <Badge variant="outline" className="ml-1 font-mono text-[11px]">{format(submittedAt, "PPpp")}</Badge>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -287,14 +281,18 @@ const PadalaRequestPage = () => {
             </div>
             <div>
               <p className="text-muted-foreground text-xs uppercase tracking-wider">Status</p>
-              <Badge variant="secondary">Pending</Badge>
+              <Badge variant="outline" className="border-[#F2B53A]/60 bg-[#F2B53A]/20 text-[#8A5A00] dark:text-[#F2B53A]">Pending</Badge>
             </div>
           </CardContent>
         </LiquidGlassCard>
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => navigate("/dashboard")}>Cancel</Button>
-          <Button type="submit" disabled={submitting}>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="bg-[#F2B53A] text-[#0B1325] hover:bg-[#e5a82b] font-semibold"
+          >
             <Send className="h-4 w-4 mr-2" /> {submitting ? "Submitting..." : (selectedTrip ? "Attach Padala" : "Submit Padala")}
           </Button>
         </div>

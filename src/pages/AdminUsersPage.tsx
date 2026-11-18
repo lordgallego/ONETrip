@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Check, X, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const AdminUsersPage = () => {
   const { canManageUsers, profile: currentUser } = useAuth();
@@ -46,22 +47,22 @@ const AdminUsersPage = () => {
     } catch (e) { toast.error((e as Error).message); }
   };
 
-  const roleVariant = (role: AppRole) => {
-    if (role === "Admin")       return "default";
-    if (role === "Approver")    return "default";
-    if (role === "Recommender") return "secondary";
-    return "outline";
+  const roleClass = (role: AppRole) => {
+    if (role === "Admin")       return "border-[#F2B53A]/60 bg-[#F2B53A]/20 text-[#8A5A00] dark:text-[#F2B53A]";
+    if (role === "Approver")    return "border-[#A9CDBE] bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE]";
+    if (role === "Recommender") return "border-sky-400/40 bg-sky-500/15 text-sky-700 dark:text-sky-300";
+    return "border-border bg-muted/60 text-muted-foreground";
   };
 
   return (
-    <div className="p-6 space-y-6 page-enter">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 page-enter">
+      <div className="flex items-center gap-3.5">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] ring-1 ring-[#A9CDBE]/50">
           <ShieldCheck className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
-          <p className="text-sm text-muted-foreground">Approve new sign-ins and assign roles for 1TRIP.</p>
+          <h1 className="font-display text-2xl font-bold tracking-tight">User Management</h1>
+          <p className="text-sm text-muted-foreground">Approve new Google sign-ins and assign operational roles for 1TRIP.</p>
         </div>
       </div>
 
@@ -69,28 +70,34 @@ const AdminUsersPage = () => {
       {pendingUsers.length > 0 && (
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
           <CardHeader>
-            <CardTitle className="text-base">Pending Approval ({pendingUsers.length})</CardTitle>
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[#F2B53A]" />
+              Pending Approval ({pendingUsers.length})
+            </CardTitle>
             <CardDescription>New Google sign-ins awaiting your review.</CardDescription>
           </CardHeader>
           <div className="px-6 pb-6 space-y-3">
             {pendingUsers.map((user) => (
-              <div key={user.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-amber-50/60 border border-amber-200/50">
+              <div
+                key={user.id}
+                className="flex flex-wrap items-center gap-3 p-3.5 rounded-xl bg-[#F2B53A]/15 dark:bg-[#F2B53A]/10 border border-[#F2B53A]/45"
+              >
                 <div className="flex-1 min-w-[200px]">
                   <p className="text-sm font-medium">{user.name || "Unnamed"}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
                 {canManageUsers && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Select onValueChange={(role) => handleApprove(user.id, role as AppRole)}>
                       <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue placeholder="Approve as..." /></SelectTrigger>
                       <SelectContent>
                         {APP_ROLES.map((r) => <SelectItem key={r} value={r}>Approve as {r}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    <Button size="sm" variant="outline" className="h-9" onClick={() => handleApprove(user.id, "Member")}>
+                    <Button size="sm" variant="outline" className="h-9 border-[#A9CDBE]/60 hover:bg-[#A9CDBE]/20" onClick={() => handleApprove(user.id, "Member")}>
                       <Check className="h-4 w-4 mr-1" /> Quick Approve
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-9 text-destructive" onClick={() => handleDelete(user.id, user.email)}>
+                    <Button size="sm" variant="ghost" className="h-9 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(user.id, user.email)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -104,7 +111,7 @@ const AdminUsersPage = () => {
       {/* APPROVED USERS */}
       <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
         <CardHeader>
-          <CardTitle className="text-base">Registered Users ({approvedUsers.length})</CardTitle>
+          <CardTitle className="font-display text-base">Registered Users ({approvedUsers.length})</CardTitle>
           <CardDescription>Change a user's role or remove them from the system.</CardDescription>
         </CardHeader>
         <div className="p-0">
@@ -140,13 +147,13 @@ const AdminUsersPage = () => {
                             </SelectContent>
                           </Select>
                         ) : (
-                          <Badge variant={roleVariant(user.role)}>{user.role}</Badge>
+                          <Badge variant="outline" className={cn(roleClass(user.role))}>{user.role}</Badge>
                         )}
                       </TableCell>
                       {canManageUsers && (
                         <TableCell>
                           {!isSelf && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(user.id, user.email)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(user.id, user.email)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}

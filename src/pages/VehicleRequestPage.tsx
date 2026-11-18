@@ -48,7 +48,6 @@ const VehicleRequestPage = () => {
     fetchVehicles().then(setVehicles).catch(() => {});
     fetchAppUsers()
       .then((users) =>
-        // Anyone approved can be picked as recommender; sorted by name.
         setRecommenders(users.filter((u) => u.is_approved).sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")))
       )
       .catch(() => {});
@@ -77,9 +76,6 @@ const VehicleRequestPage = () => {
     setSubmitting(true);
     try {
       const travelDate = values.travel_date;
-      // Tag with PHT (+08:00) so Postgres stores the right instant. Without
-      // the offset, naive timestamps get treated as UTC and the timeline
-      // displays them 8 hours ahead.
       const etd = combineDateTimePHT(travelDate, values.etd);
       const eta = combineDateTimePHT(travelDate, values.eta);
       const vehicle = vehicles.find((v) => v.id === values.vehicle_id);
@@ -104,10 +100,6 @@ const VehicleRequestPage = () => {
 
       const tripLink = `/dashboard?req=${created.id}`;
 
-      // Site-wide broadcast so other users see the new trip on the timeline.
-      // Errors are surfaced (rather than silently swallowed) so the user
-      // knows when notifications fail — usually because the schema migration
-      // for app/kind/user_id RLS hasn't been applied to the connected DB.
       let notifyError: string | null = null;
       try {
         await pushNotification({
@@ -120,7 +112,6 @@ const VehicleRequestPage = () => {
         notifyError = (e as { message?: string })?.message ?? "broadcast failed";
       }
 
-      // DM the chosen recommender so they don't miss it.
       if (recommender) {
         try {
           await pushNotification({
@@ -146,8 +137,6 @@ const VehicleRequestPage = () => {
           duration: 12000,
         });
       }
-      // Pull fresh notifications so the bell updates without waiting for
-      // the next poll cycle.
       refetchNotifications();
       navigate(tripLink);
     } catch (e) {
@@ -162,13 +151,13 @@ const VehicleRequestPage = () => {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto page-enter">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto page-enter">
+      <div className="flex items-center gap-3.5 mb-6">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] ring-1 ring-[#A9CDBE]/50">
           <Car className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Submit Vehicle Request</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Submit Vehicle Request</h1>
           <p className="text-sm text-muted-foreground">Reserve a service vehicle for an official trip.</p>
         </div>
       </div>
@@ -176,9 +165,9 @@ const VehicleRequestPage = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
           <CardHeader>
-            <CardTitle className="text-base">Request Details</CardTitle>
+            <CardTitle className="font-display text-base">Request Details</CardTitle>
             <CardDescription>
-              Date Prepared: <Badge variant="outline" className="ml-1">{format(submittedAt, "PPpp")}</Badge>
+              Date Prepared: <Badge variant="outline" className="ml-1 font-mono text-[11px]">{format(submittedAt, "PPpp")}</Badge>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -246,7 +235,7 @@ const VehicleRequestPage = () => {
                   <div className="text-[11px] text-muted-foreground flex items-center gap-3 pt-1">
                     <span className="inline-flex items-center gap-1"><UserIcon className="h-3 w-3" />{selectedVehicle.driver_name}</span>
                     {selectedVehicle.driver_contact && (
-                      <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{selectedVehicle.driver_contact}</span>
+                      <span className="inline-flex items-center gap-1 font-mono"><Phone className="h-3 w-3" />{selectedVehicle.driver_contact}</span>
                     )}
                   </div>
                 )}
@@ -286,7 +275,7 @@ const VehicleRequestPage = () => {
             </div>
             <div>
               <p className="text-muted-foreground text-xs uppercase tracking-wider">Status</p>
-              <Badge variant="secondary">Pending</Badge>
+              <Badge variant="outline" className="border-[#F2B53A]/60 bg-[#F2B53A]/20 text-[#8A5A00] dark:text-[#F2B53A]">Pending</Badge>
             </div>
             <div>
               <p className="text-muted-foreground text-xs uppercase tracking-wider">Approved</p>
@@ -297,7 +286,7 @@ const VehicleRequestPage = () => {
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => navigate("/dashboard")}>Cancel</Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting} className="font-semibold">
             <Send className="h-4 w-4 mr-2" /> {submitting ? "Submitting..." : "Submit Request"}
           </Button>
         </div>

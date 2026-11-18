@@ -41,9 +41,6 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
       toast.error("Invalid URL");
       return;
     }
-    // Supabase has two key formats: legacy JWT anon keys (eyJ…) and
-    // the newer publishable keys (sb_publishable_…). Either is fine to
-    // expose to the browser. Reject the secret key explicitly.
     if (trimmedKey.startsWith("sb_secret_") || trimmedKey.startsWith("service_role")) {
       toast.error("Use the publishable / anon key — never the service-role key");
       return;
@@ -55,7 +52,6 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
 
     setSaving(true);
     toast.success("Connecting to your Supabase project — reloading…");
-    // setSupabaseConfig writes localStorage and reloads the page.
     setTimeout(() => setSupabaseConfig(trimmedUrl, trimmedKey), 400);
   };
 
@@ -75,8 +71,8 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" /> Connect Your Supabase Project
+          <DialogTitle className="font-display flex items-center gap-2">
+            <Database className="h-5 w-5 text-[#1D5944] dark:text-[#A9CDBE]" /> Connect Your Supabase Project
           </DialogTitle>
           <DialogDescription>
             Enter the URL and anon (public) key from your Supabase project. These are stored in your browser only.
@@ -84,10 +80,17 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
         </DialogHeader>
 
         <div className="space-y-3 py-2">
-          <div className="rounded-lg border border-border/40 bg-muted/30 p-3 text-xs space-y-1">
+          <div className="rounded-xl border border-border/60 bg-muted/40 p-3 text-xs space-y-1">
             <div className="flex items-center justify-between">
               <span className="font-medium">Current connection</span>
-              <Badge variant={isSupabaseConfigured ? "default" : "outline"}>
+              <Badge
+                variant="outline"
+                className={
+                  isSupabaseConfigured
+                    ? "border-[#A9CDBE] bg-[#A9CDBE]/25 text-[#1A4D3B] dark:text-[#A9CDBE]"
+                    : ""
+                }
+              >
                 {isSupabaseConfigured ? "Connected" : "Not configured"}
               </Badge>
             </div>
@@ -139,9 +142,9 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
             </p>
           </div>
 
-          <div className="rounded-md border border-amber-300/50 bg-amber-50/60 p-2.5 text-[11px] text-amber-900">
-            <p className="font-medium mb-0.5">Don't forget to set up the schema:</p>
-            <p>
+          <div className="rounded-lg border border-[#F2B53A]/55 bg-[#F2B53A]/15 dark:bg-[#F2B53A]/10 p-3 text-[11px] text-[#7A4F00] dark:text-[#F2B53A]">
+            <p className="font-semibold mb-0.5">Don't forget to set up the schema:</p>
+            <p className="opacity-90">
               In Supabase → SQL Editor, run <code>supabase/schema.sql</code> (and optionally <code>seed.sql</code>) from this repo, then enable Google in Authentication → Providers.
             </p>
           </div>

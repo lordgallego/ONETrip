@@ -11,10 +11,10 @@ import { useNavigate } from "react-router-dom";
 import type { NotificationKind } from "@/lib/queries";
 
 const KIND_META: Record<NotificationKind, { icon: typeof Car; tint: string }> = {
-  new_request:     { icon: Car,      tint: "text-emerald-600 bg-emerald-100" },
-  status_change:   { icon: ThumbsUp, tint: "text-sky-600 bg-sky-100" },
-  padala_attached: { icon: Package,  tint: "text-amber-600 bg-amber-100" },
-  info:            { icon: Info,     tint: "text-muted-foreground bg-muted" },
+  new_request: { icon: Car, tint: "text-[#1E5643] bg-[#A9CDBE]/35 dark:text-[#A9CDBE] dark:bg-[#A9CDBE]/15" },
+  status_change: { icon: ThumbsUp, tint: "text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-500/15" },
+  padala_attached: { icon: Package, tint: "text-[#8A5A00] bg-[#F2B53A]/30 dark:text-[#F2B53A] dark:bg-[#F2B53A]/15" },
+  info: { icon: Info, tint: "text-muted-foreground bg-muted" },
 };
 
 const NotificationBell = () => {
@@ -29,12 +29,15 @@ const NotificationBell = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9 rounded-full border border-[#0B1325]/10 bg-white/70 hover:bg-[#A9CDBE]/25 dark:border-[#A9CDBE]/25 dark:bg-[#111B33]/80 dark:hover:bg-[#172544]"
+        >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 text-[10px] font-bold leading-none flex items-center justify-center rounded-full"
+              className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 text-[10px] font-bold leading-none flex items-center justify-center rounded-full bg-[#F2B53A] text-[#0B1325] border border-background hover:bg-[#F2B53A]"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
@@ -47,7 +50,7 @@ const NotificationBell = () => {
           <div>
             <span>Activity feed</span>
             <p className="text-[10px] font-normal text-muted-foreground">
-              New trips & padala — so you don't miss what's on the schedule.
+              New trips &amp; padala — so you don't miss what's on the schedule.
             </p>
           </div>
           {unreadCount > 0 && (
@@ -78,11 +81,11 @@ const NotificationBell = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start gap-2">
-                    {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />}
+                    {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-[#F2B53A] shrink-0 mt-1.5" />}
                     <span className="font-medium text-sm leading-tight">{n.title}</span>
                   </div>
                   {n.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.body}</p>}
-                  <span className="text-[10px] text-muted-foreground mt-1 block">
+                  <span className="text-[10px] text-muted-foreground font-mono mt-1 block">
                     {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                   </span>
                 </div>

@@ -14,60 +14,32 @@ interface GlassEffectProps {
 
 const GlassEffect: React.FC<GlassEffectProps> = ({ children, className = "", style = {} }) => {
   const glassStyle: React.CSSProperties = {
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15), 0 0 40px rgba(0, 0, 0, 0.05)",
     transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)",
     ...style,
   };
   return (
     <div
-      className={`relative flex font-semibold overflow-hidden transition-all duration-700 ${className}`}
+      className={cn(
+        "relative flex font-semibold overflow-hidden transition-all duration-700",
+        "bg-white/80 dark:bg-[#101B33]/90 backdrop-blur-xl",
+        "border border-[#0B1325]/15 dark:border-[#A9CDBE]/25",
+        "shadow-[0_12px_36px_-8px_rgba(11,19,37,0.18),0_0_0_1px_rgba(169,205,190,0.22)] dark:shadow-[0_16px_44px_-6px_rgba(0,0,0,0.65),0_0_24px_-8px_rgba(169,205,190,0.22)]",
+        className,
+      )}
       style={glassStyle}
     >
       <div
-        className="absolute inset-0 z-0 overflow-hidden rounded-[inherit]"
-        style={{
-          backdropFilter: "blur(16px) saturate(180%)",
-          WebkitBackdropFilter: "blur(16px) saturate(180%)",
-          filter: "url(#glass-distortion)",
-          isolation: "isolate",
-        }}
-      />
-      <div
-        className="absolute inset-0 z-10 rounded-[inherit]"
-        style={{ background: "rgba(255, 255, 255, 0.12)" }}
-      />
-      <div
-        className="absolute inset-0 z-20 rounded-[inherit] overflow-hidden pointer-events-none"
-        style={{
-          boxShadow:
-            "inset 1px 1px 0 0 rgba(255, 255, 255, 0.3), inset -1px -1px 0 0 rgba(255, 255, 255, 0.1)",
-        }}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] bg-gradient-to-r from-[#A9CDBE]/[0.08] via-transparent to-[#F2B53A]/[0.08]"
       />
       <div className="relative z-30 w-full">{children}</div>
     </div>
   );
 };
 
-// ─── SVG Filter ──────────────────────────────
+// ─── SVG Filter (kept for API compatibility) ─
 
-export const GlassFilter: React.FC = () => (
-  <svg style={{ display: "none" }} aria-hidden="true">
-    <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
-      <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence" />
-      <feComponentTransfer in="turbulence" result="mapped">
-        <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
-        <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
-        <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
-      </feComponentTransfer>
-      <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
-      <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100" lightingColor="white" result="specLight">
-        <fePointLight x="-200" y="-200" z="300" />
-      </feSpecularLighting>
-      <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage" />
-      <feDisplacementMap in="SourceGraphic" in2="softMap" scale="200" xChannelSelector="R" yChannelSelector="G" />
-    </filter>
-  </svg>
-);
+export const GlassFilter: React.FC = () => null;
 
 // ─── Dock Item ───────────────────────────────
 
@@ -76,9 +48,10 @@ interface DockItemProps {
   label: string;
   href: string;
   active: boolean;
+  accent?: "sage" | "gold";
 }
 
-const DockItem: React.FC<DockItemProps> = ({ icon, label, href, active }) => (
+const DockItem: React.FC<DockItemProps> = ({ icon, label, href, active, accent = "sage" }) => (
   <Link
     to={href}
     className="group relative flex flex-col items-center gap-0.5 shrink-0"
@@ -86,19 +59,20 @@ const DockItem: React.FC<DockItemProps> = ({ icon, label, href, active }) => (
   >
     <div
       className={cn(
-        "flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl transition-all duration-500",
+        "relative flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl transition-all duration-300",
         active
-          ? "bg-black/15 text-foreground scale-110 shadow-lg shadow-black/10"
-          : "text-foreground/60 hover:text-foreground hover:bg-black/10 hover:scale-105"
+          ? accent === "gold"
+            ? "bg-[#F2B53A] text-[#0B1325] scale-105 shadow-md shadow-[#F2B53A]/30"
+            : "bg-[#0B1325] text-[#A9CDBE] dark:bg-[#A9CDBE] dark:text-[#0B1325] scale-105 shadow-md shadow-[#A9CDBE]/25"
+          : "text-foreground/70 hover:text-foreground hover:bg-[#A9CDBE]/20 dark:hover:bg-[#172544] hover:scale-105"
       )}
-      style={{ transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)" }}
     >
       {icon}
     </div>
     <span
       className={cn(
         "hidden md:inline text-[10px] font-medium transition-opacity duration-300",
-        active ? "text-foreground opacity-100" : "text-foreground/40 opacity-0 group-hover:opacity-100"
+        active ? "text-foreground opacity-100 font-semibold" : "text-muted-foreground opacity-75 group-hover:opacity-100"
       )}
     >
       {label}
@@ -112,26 +86,27 @@ const HomeButton: React.FC<{ active: boolean }> = ({ active }) => (
   <Link to="/dashboard" className="group relative flex flex-col items-center gap-0.5 shrink-0" title="Dashboard">
     <div
       className={cn(
-        "flex h-11 w-11 sm:h-14 sm:w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl transition-all duration-500",
-        active ? "bg-black/15 scale-110 shadow-lg shadow-black/10" : "hover:bg-black/10 hover:scale-105"
+        "flex h-11 w-11 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl transition-all duration-300",
+        active
+          ? "bg-[#A9CDBE]/30 dark:bg-[#A9CDBE]/20 ring-2 ring-[#A9CDBE] dark:ring-[#A9CDBE]/80 scale-105 shadow-md"
+          : "hover:bg-[#A9CDBE]/20 dark:hover:bg-[#172544] hover:scale-105"
       )}
-      style={{ transitionTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 2.2)" }}
     >
-      <img src="/onetrip-logo.png" alt="1TRIP" className="h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain drop-shadow-sm" />
+      <img src="/onetrip-logo.png" alt="1TRIP" className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 object-contain drop-shadow-sm" />
     </div>
     <span
       className={cn(
         "hidden md:inline text-[10px] font-medium transition-opacity duration-300",
-        active ? "text-foreground opacity-100" : "text-foreground/40 opacity-0 group-hover:opacity-100"
+        active ? "text-foreground opacity-100 font-semibold" : "text-muted-foreground opacity-75 group-hover:opacity-100"
       )}
     >
-      Home
+      Timeline
     </span>
   </Link>
 );
 
 const DockSeparator = () => (
-  <div className="h-8 sm:h-10 w-px bg-foreground/15 mx-0.5 sm:mx-1.5 shrink-0" />
+  <div className="h-8 sm:h-10 w-px bg-[#0B1325]/15 dark:bg-[#A9CDBE]/20 mx-0.5 sm:mx-1.5 shrink-0" />
 );
 
 // ─── Main Dock (bottom floating capsule) ─────
@@ -144,28 +119,36 @@ export const GlassDock: React.FC = () => {
     path === "/" ? location.pathname === "/" || location.pathname === "/dashboard"
                  : location.pathname.startsWith(path);
 
-  const navItems = [
-    { icon: <Car className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />, label: "Travel", href: "/travel-request" },
-    { icon: <Package className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />, label: "Padala", href: "/padala-request" },
+  const navItems: Array<{ icon: React.ReactNode; label: string; href: string; accent: "sage" | "gold" }> = [
+    { icon: <Car className="h-4 w-4 sm:h-5 sm:w-5" />, label: "Travel", href: "/travel-request", accent: "sage" },
+    { icon: <Package className="h-4 w-4 sm:h-5 sm:w-5" />, label: "Padala", href: "/padala-request", accent: "gold" },
   ];
 
   return (
-    <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-1.5rem)] sm:w-auto max-w-[calc(100vw-1.5rem)]">
-      <GlassEffect className="rounded-2xl sm:rounded-[32px] p-2 sm:p-3 transition-all duration-700 w-full sm:w-auto">
-        <div className="flex items-center gap-1 sm:gap-2 px-0.5 sm:px-1.5 overflow-x-auto scrollbar-hide justify-center sm:justify-start">
+    <div className="fixed bottom-4 sm:bottom-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-1.5rem)] sm:w-auto max-w-[calc(100vw-1.5rem)]">
+      <GlassEffect className="rounded-2xl sm:rounded-[28px] p-2 sm:p-2.5 transition-all duration-500 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 px-1 sm:px-2 overflow-x-auto scrollbar-hide justify-center sm:justify-start">
           <HomeButton active={isActive("/")} />
           <DockSeparator />
           {navItems.map((item) => (
-            <DockItem key={item.href} icon={item.icon} label={item.label} href={item.href} active={isActive(item.href)} />
+            <DockItem
+              key={item.href}
+              icon={item.icon}
+              label={item.label}
+              href={item.href}
+              active={isActive(item.href)}
+              accent={item.accent}
+            />
           ))}
           {isAdmin && (
             <>
               <DockSeparator />
               <DockItem
-                icon={<ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />}
+                icon={<ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />}
                 label="Admin"
                 href="/admin"
                 active={isActive("/admin")}
+                accent="sage"
               />
             </>
           )}

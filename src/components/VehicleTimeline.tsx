@@ -17,27 +17,57 @@ interface Props {
   onSelect?: (req: VehicleRequest) => void;
 }
 
-const STATUS_STYLES: Record<RequestStatus, { bar: string; chip: string; ring: string; label: string }> = {
-  Pending:     { bar: "bg-amber-400/85 hover:bg-amber-500",     chip: "bg-amber-100 text-amber-800 border-amber-300",     ring: "ring-amber-300/40",     label: "Pending" },
-  Recommended: { bar: "bg-sky-500/85 hover:bg-sky-600",         chip: "bg-sky-100 text-sky-800 border-sky-300",           ring: "ring-sky-300/40",       label: "Recommended" },
-  Approved:    { bar: "bg-emerald-500/85 hover:bg-emerald-600", chip: "bg-emerald-100 text-emerald-800 border-emerald-300", ring: "ring-emerald-300/40", label: "Approved" },
-  Rejected:    { bar: "bg-rose-400/75 hover:bg-rose-500",       chip: "bg-rose-100 text-rose-800 border-rose-300",         ring: "ring-rose-300/40",      label: "Rejected" },
+const STATUS_STYLES: Record<RequestStatus, { bar: string; dot: string; chip: string; ring: string; label: string }> = {
+  Pending: {
+    bar: "bg-[#F2B53A]/95 hover:bg-[#F2B53A] text-[#0B1325]",
+    dot: "bg-[#F2B53A]",
+    chip: "bg-[#F2B53A]/20 text-[#8A5A00] border-[#F2B53A]/50 dark:bg-[#F2B53A]/15 dark:text-[#F2B53A] dark:border-[#F2B53A]/40",
+    ring: "ring-[#F2B53A]/50",
+    label: "Pending",
+  },
+  Recommended: {
+    bar: "bg-sky-600/90 hover:bg-sky-600 text-white dark:bg-sky-500/85 dark:hover:bg-sky-500",
+    dot: "bg-sky-500",
+    chip: "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/35",
+    ring: "ring-sky-400/40",
+    label: "Recommended",
+  },
+  Approved: {
+    bar: "bg-[#256D54] hover:bg-[#1E5944] text-white dark:bg-[#A9CDBE] dark:hover:bg-[#b8dacb] dark:text-[#0B1325]",
+    dot: "bg-[#256D54] dark:bg-[#A9CDBE]",
+    chip: "bg-[#A9CDBE]/30 text-[#1A4D3B] border-[#A9CDBE] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] dark:border-[#A9CDBE]/40",
+    ring: "ring-[#A9CDBE]/50",
+    label: "Approved",
+  },
+  Rejected: {
+    bar: "bg-rose-500/85 hover:bg-rose-500 text-white",
+    dot: "bg-rose-500",
+    chip: "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/35",
+    ring: "ring-rose-400/40",
+    label: "Rejected",
+  },
 };
 
 // Per-vehicle palette — used for the row's left rail and the trip block's
 // left edge so you can tell at a glance which vehicle a block belongs to,
 // independent of its status color.
 const VEHICLE_PALETTE = [
-  { id: "blue",    swatch: "bg-blue-500",    text: "text-blue-700",    soft: "bg-blue-50",    border: "border-blue-500",    hex: "#3b82f6" },
-  { id: "purple",  swatch: "bg-purple-500",  text: "text-purple-700",  soft: "bg-purple-50",  border: "border-purple-500",  hex: "#a855f7" },
-  { id: "orange",  swatch: "bg-orange-500",  text: "text-orange-700",  soft: "bg-orange-50",  border: "border-orange-500",  hex: "#f97316" },
-  { id: "cyan",    swatch: "bg-cyan-500",    text: "text-cyan-700",    soft: "bg-cyan-50",    border: "border-cyan-500",    hex: "#06b6d4" },
-  { id: "pink",    swatch: "bg-pink-500",    text: "text-pink-700",    soft: "bg-pink-50",    border: "border-pink-500",    hex: "#ec4899" },
-  { id: "indigo",  swatch: "bg-indigo-500",  text: "text-indigo-700",  soft: "bg-indigo-50",  border: "border-indigo-500",  hex: "#6366f1" },
-  { id: "teal",    swatch: "bg-teal-500",    text: "text-teal-700",    soft: "bg-teal-50",    border: "border-teal-500",    hex: "#14b8a6" },
-  { id: "fuchsia", swatch: "bg-fuchsia-500", text: "text-fuchsia-700", soft: "bg-fuchsia-50", border: "border-fuchsia-500", hex: "#d946ef" },
+  { id: "sage",    swatch: "bg-[#3A8F71] dark:bg-[#A9CDBE]", text: "text-[#1D5944] dark:text-[#A9CDBE]", soft: "bg-[#A9CDBE]/25 dark:bg-[#A9CDBE]/15", hex: "#A9CDBE" },
+  { id: "gold",    swatch: "bg-[#D99714] dark:bg-[#F2B53A]", text: "text-[#8A5A00] dark:text-[#F2B53A]", soft: "bg-[#F2B53A]/20 dark:bg-[#F2B53A]/15", hex: "#F2B53A" },
+  { id: "blue",    swatch: "bg-sky-500",                     text: "text-sky-700 dark:text-sky-300",     soft: "bg-sky-500/15",                       hex: "#38bdf8" },
+  { id: "purple",  swatch: "bg-violet-500",                  text: "text-violet-700 dark:text-violet-300", soft: "bg-violet-500/15",                  hex: "#a78bfa" },
+  { id: "orange",  swatch: "bg-orange-500",                  text: "text-orange-700 dark:text-orange-300", soft: "bg-orange-500/15",                  hex: "#fb923c" },
+  { id: "cyan",    swatch: "bg-cyan-500",                    text: "text-cyan-700 dark:text-cyan-300",   soft: "bg-cyan-500/15",                      hex: "#22d3ee" },
+  { id: "pink",    swatch: "bg-pink-500",                    text: "text-pink-700 dark:text-pink-300",   soft: "bg-pink-500/15",                      hex: "#f472b6" },
+  { id: "indigo",  swatch: "bg-indigo-500",                  text: "text-indigo-700 dark:text-indigo-300", soft: "bg-indigo-500/15",                  hex: "#818cf8" },
 ];
-const UNASSIGNED_PALETTE = { id: "muted", swatch: "bg-muted-foreground/40", text: "text-muted-foreground", soft: "bg-muted/40", border: "border-muted-foreground/40", hex: "#94a3b8" };
+const UNASSIGNED_PALETTE = {
+  id: "muted",
+  swatch: "bg-muted-foreground/40",
+  text: "text-muted-foreground",
+  soft: "bg-muted/50",
+  hex: "#94a3b8",
+};
 
 // ─── Range presets ───────────────────────────
 type RangeKey = "1d" | "3d" | "7d" | "1m" | "3m" | "6m";
@@ -57,10 +87,8 @@ const RANGES: RangePreset[] = [
   { key: "6m", label: "6m", unit: "day",  cells: 183,       cellPx: 18 },
 ];
 
-// Tall rows so trip blocks fit From → To, time range, requester, and
-// purpose without truncation at common widths.
 const ROW_HEIGHT = 104;
-const VEHICLE_COL_WIDTH = 220;
+const VEHICLE_COL_WIDTH = 224;
 const BLOCK_TOP = 8;
 const BLOCK_HEIGHT = 88;
 
@@ -88,10 +116,6 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
     return m;
   }, [padala]);
 
-  // Rows = vehicles + (Unassigned bucket if any unassigned trips exist).
-  // Each row carries a deterministic color from VEHICLE_PALETTE based on
-  // its index in the sorted vehicle list, so the same vehicle always shows
-  // the same color across reloads.
   interface Row {
     id: string;
     name: string;
@@ -175,15 +199,23 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
           <div
             key={d.toISOString()}
             style={{ width: 24 * range.cellPx }}
-            className={`border-r border-border/40 ${isSameDay(d, new Date()) ? "bg-primary/5" : ""}`}
+            className={cn(
+              "border-r border-border/50",
+              isSameDay(d, new Date()) && "bg-[#A9CDBE]/15 dark:bg-[#A9CDBE]/[0.08]",
+            )}
           >
-            <div className="px-2 py-1 text-xs font-medium">{format(d, "EEE, MMM d")}</div>
+            <div className="px-2.5 py-1 text-xs font-semibold flex items-center gap-1.5">
+              <span>{format(d, "EEE, MMM d")}</span>
+              {isSameDay(d, new Date()) && (
+                <span className="h-1.5 w-1.5 rounded-full bg-[#F2B53A]" title="Today" />
+              )}
+            </div>
             <div className="flex">
               {Array.from({ length: 24 }, (_, h) => (
                 <div
                   key={h}
                   style={{ width: range.cellPx }}
-                  className="text-[10px] text-muted-foreground text-center border-l border-border/20 first:border-l-0 py-0.5"
+                  className="font-mono text-[10px] text-muted-foreground text-center border-l border-border/25 first:border-l-0 py-0.5 tabular-nums"
                 >
                   {h % 3 === 0 ? `${h.toString().padStart(2, "0")}:00` : ""}
                 </div>
@@ -205,14 +237,17 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
             <div
               key={d.toISOString()}
               style={{ width: range.cellPx }}
-              className={`border-l border-border/15 first:border-l-0 ${isSameDay(d, new Date()) ? "bg-primary/10" : ""}`}
+              className={cn(
+                "border-l border-border/25 first:border-l-0",
+                isSameDay(d, new Date()) && "bg-[#A9CDBE]/20 dark:bg-[#A9CDBE]/10",
+              )}
             >
               {monthStart && (
-                <div className="text-[10px] font-semibold text-primary px-1 truncate border-b border-border/40">
+                <div className="text-[10px] font-semibold text-[#1D5944] dark:text-[#A9CDBE] px-1 truncate border-b border-border/40">
                   {format(d, "MMM yyyy")}
                 </div>
               )}
-              <div className={`text-[10px] text-center text-muted-foreground py-0.5 ${monthStart ? "" : "pt-[14px]"}`}>
+              <div className={cn("font-mono text-[10px] text-center text-muted-foreground py-0.5 tabular-nums", !monthStart && "pt-[14px]")}>
                 {format(d, "d")}
               </div>
             </div>
@@ -225,12 +260,18 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
   return (
     <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <Button size="icon" variant="outline" className="h-8 w-8" onClick={goPrev}><ChevronLeft className="h-4 w-4" /></Button>
-          <Button size="sm" variant="outline" className="h-8" onClick={goToday}>Today</Button>
-          <Button size="icon" variant="outline" className="h-8 w-8" onClick={goNext}><ChevronRight className="h-4 w-4" /></Button>
-          <span className="ml-3 text-sm font-medium">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex items-center gap-1.5">
+          <Button size="icon" variant="outline" className="h-8 w-8" onClick={goPrev} aria-label="Previous range">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 font-medium" onClick={goToday}>
+            Today
+          </Button>
+          <Button size="icon" variant="outline" className="h-8 w-8" onClick={goNext} aria-label="Next range">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <span className="ml-2 font-mono text-xs sm:text-sm font-medium text-foreground/90 tabular-nums">
             {isHourMode
               ? `${format(anchor, "MMM d")} – ${format(addDays(anchor, range.cells / 24 - 1), "MMM d, yyyy")}`
               : `${format(anchor, "MMM d, yyyy")} – ${format(addDays(anchor, range.cells - 1), "MMM d, yyyy")}`
@@ -238,21 +279,24 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
           </span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className="flex items-center gap-1.5 text-xs flex-wrap">
             {(["Pending", "Recommended", "Approved", "Rejected"] as RequestStatus[]).map((s) => (
-              <span key={s} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${STATUS_STYLES[s].chip}`}>
-                <span className={`h-2 w-2 rounded-full ${STATUS_STYLES[s].bar}`} />
+              <span key={s} className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border font-medium", STATUS_STYLES[s].chip)}>
+                <span className={cn("h-2 w-2 rounded-full", STATUS_STYLES[s].dot)} />
                 {STATUS_STYLES[s].label}
               </span>
             ))}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5 border border-border/50">
             {RANGES.map((r) => (
               <Button
                 key={r.key}
                 size="sm"
-                variant={rangeKey === r.key ? "default" : "outline"}
-                className="h-7 px-2.5 text-xs"
+                variant={rangeKey === r.key ? "default" : "ghost"}
+                className={cn(
+                  "h-7 px-2.5 text-xs font-mono",
+                  rangeKey === r.key && "shadow-sm",
+                )}
                 onClick={() => {
                   setRangeKey(r.key);
                   if (r.unit === "day" && isHourMode) setAnchor(startOfMonth(anchor));
@@ -269,13 +313,13 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
       {/* Vehicle color legend */}
       {rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-[11px]">
-          <span className="text-muted-foreground">Vehicles:</span>
+          <span className="text-muted-foreground font-medium">Fleet:</span>
           {rows.map((row) => (
             <span
               key={row.id}
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${row.palette.soft} ${row.palette.text}`}
+              className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-medium", row.palette.soft, row.palette.text)}
             >
-              <span className={`h-2 w-2 rounded-full ${row.palette.swatch}`} />
+              <span className={cn("h-2 w-2 rounded-full", row.palette.swatch)} />
               {row.name}
             </span>
           ))}
@@ -283,14 +327,14 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
       )}
 
       {/* Scrollable timeline */}
-      <div className="border border-border/40 rounded-xl bg-white/50 backdrop-blur-sm overflow-hidden">
+      <div className="border border-border/70 rounded-xl bg-white/70 dark:bg-[#0B1325]/70 backdrop-blur-sm overflow-hidden">
         <div className="overflow-x-auto">
           <div style={{ minWidth: VEHICLE_COL_WIDTH + totalWidth }}>
             {/* Header row */}
-            <div className="flex sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-border/40">
+            <div className="flex sticky top-0 z-20 bg-white/95 dark:bg-[#101B33]/95 backdrop-blur-md border-b border-border/70">
               <div
                 style={{ width: VEHICLE_COL_WIDTH, position: "sticky", left: 0 }}
-                className="shrink-0 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-r border-border/40 bg-white/85 backdrop-blur-md z-30"
+                className="shrink-0 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-r border-border/60 bg-white/95 dark:bg-[#101B33]/95 backdrop-blur-md z-30 flex items-center"
               >
                 Vehicle / Driver
               </div>
@@ -306,9 +350,8 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
               rows.map((row) => {
                 const reqs = requestsByVehicle.get(row.id) ?? [];
                 return (
-                  <div key={row.id} className="flex border-b border-border/30 last:border-b-0">
-                    {/* Row label with vehicle color rail — sticky so it stays
-                        visible when the user scrolls horizontally. */}
+                  <div key={row.id} className="flex border-b border-border/40 last:border-b-0">
+                    {/* Row label with vehicle color rail */}
                     <div
                       style={{
                         width: VEHICLE_COL_WIDTH,
@@ -316,16 +359,18 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                         position: "sticky",
                         left: 0,
                       }}
-                      className={`shrink-0 flex items-stretch border-r border-border/40 z-10 ${row.palette.soft}/30 bg-white`}
+                      className="shrink-0 flex items-stretch border-r border-border/60 z-10 bg-white/95 dark:bg-[#101B33]/95 backdrop-blur-md"
                     >
-                      <div className={`w-1.5 shrink-0 ${row.palette.swatch}`} />
-                      <div className="flex-1 px-3 flex items-center gap-2 min-w-0 bg-white/85 backdrop-blur-sm">
-                        <div className={`flex h-7 w-7 items-center justify-center rounded-md ${row.palette.soft} ${row.palette.text} shrink-0`}>
-                          <Car className="h-3.5 w-3.5" />
+                      <div className={cn("w-1.5 shrink-0", row.palette.swatch)} />
+                      <div className="flex-1 px-3 flex items-center gap-2.5 min-w-0">
+                        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg shrink-0", row.palette.soft, row.palette.text)}>
+                          <Car className="h-4 w-4" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold truncate">{row.name}</p>
-                          {row.plate && <p className="text-[10px] text-muted-foreground truncate">{row.plate}</p>}
+                          <p className="text-xs font-semibold truncate text-foreground">{row.name}</p>
+                          {row.plate && (
+                            <p className="font-mono text-[10px] text-muted-foreground truncate">{row.plate}</p>
+                          )}
                           {row.sub && (
                             <p className="text-[10px] text-muted-foreground truncate">{row.sub}</p>
                           )}
@@ -342,7 +387,10 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                             return (
                               <div
                                 key={d.toISOString()}
-                                className={`absolute top-0 bottom-0 border-r border-border/30 ${isSameDay(d, new Date()) ? "bg-primary/5" : ""}`}
+                                className={cn(
+                                  "absolute top-0 bottom-0 border-r border-border/40",
+                                  isSameDay(d, new Date()) && "bg-[#A9CDBE]/10 dark:bg-[#A9CDBE]/[0.05]",
+                                )}
                                 style={{ left: dayIdx * 24 * range.cellPx, width: 24 * range.cellPx }}
                               />
                             );
@@ -353,7 +401,14 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                             return (
                               <div
                                 key={d.toISOString()}
-                                className={`absolute top-0 bottom-0 border-r border-border/15 ${isSameDay(d, new Date()) ? "bg-primary/10" : isWeekend ? "bg-muted/30" : ""}`}
+                                className={cn(
+                                  "absolute top-0 bottom-0 border-r border-border/25",
+                                  isSameDay(d, new Date())
+                                    ? "bg-[#A9CDBE]/15 dark:bg-[#A9CDBE]/[0.08]"
+                                    : isWeekend
+                                      ? "bg-muted/35"
+                                      : "",
+                                )}
                                 style={{ left: dayIdx * range.cellPx, width: range.cellPx }}
                               />
                             );
@@ -365,10 +420,10 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                         if (now < rangeStart || now > rangeEnd) return null;
                         return (
                           <div
-                            className="absolute top-0 bottom-0 w-px bg-rose-500/70 z-20"
+                            className="absolute top-0 bottom-0 w-px bg-[#F2B53A] z-20"
                             style={{ left: xFor(now) }}
                           >
-                            <div className="absolute -top-1 -left-[3px] h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            <div className="absolute -top-1 -left-[3.5px] h-2 w-2 rounded-full bg-[#F2B53A] ring-2 ring-background" />
                           </div>
                         );
                       })()}
@@ -379,22 +434,22 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                         if (!block) return null;
                         const status = STATUS_STYLES[req.status] ?? STATUS_STYLES.Pending;
                         const padalaCount = padalaByTrip.get(req.id)?.length ?? 0;
-                        // Adaptive content: each tier shows progressively more
-                        // info as horizontal space grows. Wider blocks also
-                        // allow From/To to wrap onto two lines so long names
-                        // remain readable instead of truncating.
                         const w = block.width;
-                        const showLabels = w >= 90;            // "From"/"To" prefix labels
-                        const showTime = w >= 130;             // ETD–ETA · requester
-                        const showPurpose = w >= 200;          // italic purpose
-                        const allowWrap = w >= 220;            // let long origins wrap
+                        const showLabels = w >= 90;
+                        const showTime = w >= 130;
+                        const showPurpose = w >= 200;
+                        const allowWrap = w >= 220;
                         return (
                           <TooltipProvider key={req.id} delayDuration={150}>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => onSelect?.(req)}
-                                  className={`absolute rounded-md ring-1 ${status.ring} ${status.bar} text-white text-xs font-medium shadow-sm transition-transform hover:scale-[1.01] cursor-pointer overflow-visible`}
+                                  className={cn(
+                                    "absolute rounded-lg ring-1 shadow-sm transition-transform hover:scale-[1.01] cursor-pointer overflow-visible",
+                                    status.ring,
+                                    status.bar,
+                                  )}
                                   style={{
                                     left: block.left,
                                     width: block.width,
@@ -403,21 +458,16 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                     borderLeft: `4px solid ${row.palette.hex}`,
                                   }}
                                 >
-                                  {/* Padala badge — always visible, in the
-                                      top-right corner, with a high-contrast
-                                      yellow background so it pops against
-                                      every status color (amber, sky,
-                                      emerald, rose). */}
                                   {padalaCount > 0 && (
                                     <span
-                                      className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-0.5 bg-amber-400 text-amber-950 rounded-full pl-1 pr-1.5 py-0.5 text-[10px] font-bold shadow ring-2 ring-white"
+                                      className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-0.5 bg-[#F2B53A] text-[#0B1325] rounded-full pl-1.5 pr-1.5 py-0.5 text-[10px] font-bold shadow ring-2 ring-background"
                                       title={`${padalaCount} padala riding along`}
                                     >
                                       <Package className="h-3 w-3" />
                                       {padalaCount}
                                     </span>
                                   )}
-                                  <div className="flex flex-col h-full px-2 py-1.5 gap-0.5 text-left overflow-hidden">
+                                  <div className="flex flex-col h-full px-2.5 py-1.5 gap-0.5 text-left overflow-hidden">
                                     {/* FROM */}
                                     <div className="flex items-start gap-1.5 min-w-0 leading-tight">
                                       {showLabels && (
@@ -440,14 +490,14 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                     </div>
                                     {/* Time + requester */}
                                     {showTime && (
-                                      <div className="text-[10px] opacity-90 truncate leading-tight mt-0.5">
+                                      <div className="font-mono text-[10px] opacity-90 truncate leading-tight mt-0.5 tabular-nums">
                                         {format(parseISO(req.etd), "HH:mm")}–{format(parseISO(req.eta), "HH:mm")}
                                         {req.requested_by_name ? ` · ${req.requested_by_name}` : ""}
                                       </div>
                                     )}
                                     {/* Purpose */}
                                     {showPurpose && req.purpose && (
-                                      <div className="text-[10px] opacity-75 italic leading-tight line-clamp-1">
+                                      <div className="text-[10px] opacity-80 italic leading-tight line-clamp-1">
                                         {req.purpose}
                                       </div>
                                     )}
@@ -458,19 +508,19 @@ const VehicleTimeline = ({ vehicles, requests, padala = [], onSelect }: Props) =
                                 <div className="space-y-1.5 text-xs">
                                   <div className="flex items-center justify-between gap-2">
                                     <span className="font-semibold">{req.origin ?? "—"} → {req.destination}</span>
-                                    <Badge variant="outline" className={`text-[10px] ${status.chip}`}>{status.label}</Badge>
+                                    <Badge variant="outline" className={cn("text-[10px]", status.chip)}>{status.label}</Badge>
                                   </div>
                                   <p>{req.purpose}</p>
-                                  <p className="text-muted-foreground">
+                                  <p className="font-mono text-muted-foreground tabular-nums">
                                     {format(parseISO(req.etd), "MMM d, HH:mm")} → {format(parseISO(req.eta), "MMM d, HH:mm")}
                                   </p>
                                   <p className="text-muted-foreground flex items-center gap-1.5">
-                                    <span className={`h-2 w-2 rounded-full ${row.palette.swatch}`} />
+                                    <span className={cn("h-2 w-2 rounded-full", row.palette.swatch)} />
                                     {row.name}
                                   </p>
                                   <p className="text-muted-foreground">By: {req.requested_by_name ?? "—"}</p>
                                   {padalaCount > 0 && (
-                                    <p className="text-muted-foreground inline-flex items-center gap-1">
+                                    <p className="text-[#8A5A00] dark:text-[#F2B53A] font-medium inline-flex items-center gap-1">
                                       <Package className="h-3 w-3" /> {padalaCount} padala riding along
                                     </p>
                                   )}

@@ -1,82 +1,106 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* 1TRIP — Transit Control Room Design System
+   Dark Base: #0B1325 | Dual Accents: #A9CDBE (Sage) & #F2B53A (Signal Gold)
+   Accents appear across both dark and light modes.
+*/
+
 @layer base {
   :root {
-    --background: 220 20% 98%;
-    --foreground: 224 32% 12%;
+    --background: 150 18% 97%;          /* #F6F9F7 cool mineral off-white */
+    --foreground: 222 54% 9.4%;         /* #0B1325 midnight navy ink */
 
     --card: 0 0% 100%;
-    --card-foreground: 224 32% 12%;
+    --card-foreground: 222 54% 9.4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 32% 12%;
+    --popover-foreground: 222 54% 9.4%;
 
-    --primary: 220 60% 22%;
+    --primary: 222 54% 12%;             /* #0E1830 deep navy anchor */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 224 32% 12%;
+    --secondary: 155 24% 90%;           /* soft #A9CDBE tint */
+    --secondary-foreground: 222 54% 9.4%;
 
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 12% 50%;
+    --muted: 155 16% 93%;
+    --muted-foreground: 218 18% 40%;
 
-    --accent: 220 50% 45%;
-    --accent-foreground: 0 0% 100%;
+    /* Accents: #A9CDBE (Sage) & #F2B53A (Signal Gold) */
+    --accent: 155 27% 73%;              /* #A9CDBE */
+    --accent-foreground: 222 54% 9.4%;
+    --accent-sage: 155 27% 73%;         /* #A9CDBE */
+    --accent-gold: 40 88% 59%;          /* #F2B53A */
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 89%;
-    --input: 220 13% 89%;
-    --ring: 220 60% 22%;
+    --border: 216 20% 87%;
+    --input: 216 20% 87%;
+    --ring: 40 88% 52%;
 
-    --radius: 0.5rem;
+    --radius: 0.65rem;
 
-    --sidebar-background: 220 60% 22%;
-    --sidebar-foreground: 220 20% 95%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 220 60% 22%;
-    --sidebar-accent: 220 55% 28%;
-    --sidebar-accent-foreground: 220 20% 95%;
-    --sidebar-border: 220 50% 30%;
-    --sidebar-ring: 220 60% 22%;
+    --sidebar-background: 222 54% 9.4%;
+    --sidebar-foreground: 155 20% 95%;
+    --sidebar-primary: 155 27% 73%;
+    --sidebar-primary-foreground: 222 54% 9.4%;
+    --sidebar-accent: 222 38% 18%;
+    --sidebar-accent-foreground: 155 27% 73%;
+    --sidebar-border: 222 32% 20%;
+    --sidebar-ring: 40 88% 59%;
 
-    --success: 152 60% 40%;
-    --warning: 38 92% 50%;
+    --success: 155 38% 38%;
+    --warning: 40 88% 52%;
   }
 
   .dark {
-    --background: 224 32% 6%;
-    --foreground: 220 20% 95%;
-    --card: 224 32% 9%;
-    --card-foreground: 220 20% 95%;
-    --popover: 224 32% 9%;
-    --popover-foreground: 220 20% 95%;
-    --primary: 220 50% 65%;
-    --primary-foreground: 224 32% 8%;
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 220 20% 95%;
-    --muted: 220 20% 15%;
-    --muted-foreground: 220 12% 60%;
-    --accent: 220 50% 55%;
-    --accent-foreground: 220 20% 95%;
-    --destructive: 0 63% 31%;
+    /* Base: #0B1325 */
+    --background: 222 54% 9.4%;
+    --foreground: 155 20% 95%;
+
+    /* Elevated surfaces from #0B1325 */
+    --card: 222 48% 12.5%;
+    --card-foreground: 155 20% 95%;
+
+    --popover: 222 48% 12.5%;
+    --popover-foreground: 155 20% 95%;
+
+    /* Sage #A9CDBE primary highlight on #0B1325 */
+    --primary: 155 27% 73%;
+    --primary-foreground: 222 54% 9.4%;
+
+    --secondary: 222 38% 18%;
+    --secondary-foreground: 155 20% 95%;
+
+    --muted: 222 36% 17%;
+    --muted-foreground: 218 18% 66%;
+
+    /* Signal Gold #F2B53A + Sage #A9CDBE accents */
+    --accent: 40 88% 59%;
+    --accent-foreground: 222 54% 9.4%;
+    --accent-sage: 155 27% 73%;
+    --accent-gold: 40 88% 59%;
+
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 220 50% 45%;
-    --sidebar-background: 224 32% 8%;
-    --sidebar-foreground: 220 20% 90%;
-    --sidebar-primary: 220 50% 65%;
-    --sidebar-primary-foreground: 224 32% 8%;
-    --sidebar-accent: 220 20% 14%;
-    --sidebar-accent-foreground: 220 20% 90%;
-    --sidebar-border: 220 20% 16%;
-    --sidebar-ring: 220 50% 45%;
+
+    --border: 222 32% 21%;
+    --input: 222 32% 21%;
+    --ring: 155 27% 73%;
+
+    --sidebar-background: 222 54% 9.4%;
+    --sidebar-foreground: 155 20% 93%;
+    --sidebar-primary: 155 27% 73%;
+    --sidebar-primary-foreground: 222 54% 9.4%;
+    --sidebar-accent: 222 38% 18%;
+    --sidebar-accent-foreground: 40 88% 59%;
+    --sidebar-border: 222 32% 21%;
+    --sidebar-ring: 155 27% 73%;
+
+    --success: 155 35% 65%;
+    --warning: 40 88% 59%;
   }
 }
 
@@ -90,29 +114,29 @@
     font-feature-settings: "cv11", "ss01";
   }
 
-  /* Smoother scrolling */
+  h1, h2, h3, .font-display {
+    font-family: "Space Grotesk", "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+
   html {
     scroll-behavior: smooth;
   }
 
-  /* Better focus rings */
   *:focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
 @layer components {
-  /* Page transition */
   .page-enter {
-    animation: pageIn 0.2s ease-out;
+    animation: pageIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   @keyframes pageIn {
-    from { opacity: 0; transform: translateY(4px); }
+    from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Stat card hover */
   .stat-card {
     @apply transition-all duration-200;
   }
@@ -120,7 +144,6 @@
     @apply shadow-md -translate-y-0.5;
   }
 
-  /* Table row hover */
   .data-row {
     @apply transition-colors;
   }
@@ -128,12 +151,10 @@
     @apply bg-muted/50;
   }
 
-  /* Smooth badge */
   .badge-soft {
     @apply font-medium tracking-tight;
   }
 
-  /* Hide scrollbar but keep scrollable (for dock) */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -142,22 +163,22 @@
     scrollbar-width: none;
   }
 
-  /* Mesh gradient background for glassmorphism */
+  /* Ambient dual-accent mesh background in both light and dark modes */
   .mesh-bg {
-    background:
-      radial-gradient(ellipse at 15% 15%, hsl(220, 60%, 92%) 0%, transparent 50%),
-      radial-gradient(ellipse at 85% 20%, hsl(200, 50%, 90%) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, hsl(240, 40%, 93%) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 70%, hsl(180, 30%, 91%) 0%, transparent 40%),
-      hsl(220, 20%, 96%);
+    background-color: #f6f9f7;
+    background-image:
+      radial-gradient(ellipse 65% 50% at 10% 8%, rgba(169, 205, 190, 0.32) 0%, transparent 58%),
+      radial-gradient(ellipse 55% 45% at 90% 14%, rgba(242, 181, 58, 0.16) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 75% 88%, rgba(169, 205, 190, 0.22) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 40% at 18% 82%, rgba(242, 181, 58, 0.11) 0%, transparent 50%);
   }
 
   .dark .mesh-bg {
-    background:
-      radial-gradient(ellipse at 15% 15%, hsl(220, 40%, 12%) 0%, transparent 50%),
-      radial-gradient(ellipse at 85% 20%, hsl(200, 30%, 10%) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, hsl(240, 25%, 11%) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 70%, hsl(180, 20%, 10%) 0%, transparent 40%),
-      hsl(224, 32%, 6%);
+    background-color: #0B1325;
+    background-image:
+      radial-gradient(ellipse 60% 48% at 12% 10%, rgba(169, 205, 190, 0.14) 0%, transparent 58%),
+      radial-gradient(ellipse 50% 44% at 88% 15%, rgba(242, 181, 58, 0.10) 0%, transparent 54%),
+      radial-gradient(ellipse 55% 45% at 78% 88%, rgba(169, 205, 190, 0.09) 0%, transparent 55%),
+      radial-gradient(ellipse 45% 40% at 16% 84%, rgba(242, 181, 58, 0.07) 0%, transparent 52%);
   }
 }
