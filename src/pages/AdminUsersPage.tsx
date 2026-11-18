@@ -11,7 +11,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Check, X, ShieldCheck } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -56,14 +56,9 @@ const AdminUsersPage = () => {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 page-enter">
-      <div className="flex items-center gap-3.5">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] ring-1 ring-[#A9CDBE]/50">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">User Management</h1>
-          <p className="text-sm text-muted-foreground">Approve new Google sign-ins and assign operational roles for 1TRIP.</p>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-balance">User Management</h1>
+        <p className="text-sm text-muted-foreground mt-1 text-pretty">Approve new Google sign-ins and assign operational roles for 1TRIP.</p>
       </div>
 
       {/* PENDING USERS */}
@@ -71,7 +66,7 @@ const AdminUsersPage = () => {
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="md" blurIntensity="lg">
           <CardHeader>
             <CardTitle className="font-display text-base flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-[#F2B53A]" />
+              <span className="size-2 rounded-full bg-[#F2B53A]" aria-hidden />
               Pending Approval ({pendingUsers.length})
             </CardTitle>
             <CardDescription>New Google sign-ins awaiting your review.</CardDescription>
@@ -89,16 +84,16 @@ const AdminUsersPage = () => {
                 {canManageUsers && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <Select onValueChange={(role) => handleApprove(user.id, role as AppRole)}>
-                      <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue placeholder="Approve as..." /></SelectTrigger>
+                      <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue placeholder="Approve as…" /></SelectTrigger>
                       <SelectContent>
                         {APP_ROLES.map((r) => <SelectItem key={r} value={r}>Approve as {r}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <Button size="sm" variant="outline" className="h-9 border-[#A9CDBE]/60 hover:bg-[#A9CDBE]/20" onClick={() => handleApprove(user.id, "Member")}>
-                      <Check className="h-4 w-4 mr-1" /> Quick Approve
+                      Approve as Member
                     </Button>
                     <Button size="sm" variant="ghost" className="h-9 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(user.id, user.email)}>
-                      <X className="h-4 w-4" />
+                      Reject
                     </Button>
                   </div>
                 )}
@@ -116,7 +111,7 @@ const AdminUsersPage = () => {
         </CardHeader>
         <div className="p-0">
           {loading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading...</div>
+            <div className="p-8 text-center text-muted-foreground">Loading…</div>
           ) : error ? (
             <div className="p-8 text-center text-destructive">Failed to load. Please refresh.</div>
           ) : approvedUsers.length === 0 ? (
@@ -153,8 +148,14 @@ const AdminUsersPage = () => {
                       {canManageUsers && (
                         <TableCell>
                           {!isSelf && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(user.id, user.email)}>
-                              <Trash2 className="h-4 w-4" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Remove ${user.email}`}
+                              className="size-8 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDelete(user.id, user.email)}
+                            >
+                              <Trash2 className="size-4" />
                             </Button>
                           )}
                         </TableCell>

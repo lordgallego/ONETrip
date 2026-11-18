@@ -35,9 +35,9 @@ function AuthGate() {
 
   if (loading && !timedOut) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 mesh-bg">
-        <div className="h-10 w-10 rounded-xl border border-[#A9CDBE]/50 bg-[#0B1325]/90 dark:bg-[#111B33] flex items-center justify-center shadow-lg">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#F2B53A] animate-pulse" />
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-3 mesh-bg">
+        <div className="size-10 rounded-xl border border-[#A9CDBE]/50 bg-[#0B1325]/90 dark:bg-[#111B33] flex items-center justify-center shadow-lg">
+          <span className="size-2.5 rounded-full bg-[#F2B53A] animate-pulse" />
         </div>
         <p className="text-sm font-medium text-muted-foreground">Loading 1TRIP dispatch…</p>
       </div>
@@ -48,7 +48,6 @@ function AuthGate() {
     return <LoginPage />;
   }
 
-  // Logged-in but not yet approved by an admin.
   if (profile && !isApproved) {
     return <PendingApprovalPage />;
   }
@@ -75,15 +74,12 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          {/* zIndex 9999 keeps toasts above the bottom GlassDock (z-50) and
-              sticky timeline columns (z-20). offset pushes them above the
-              footer strip. */}
           <Sonner
             position="bottom-right"
             closeButton
             richColors
             duration={5500}
-            offset={64}
+            offset={24}
             style={{ zIndex: 9999 } as React.CSSProperties}
           />
           <BrowserRouter>

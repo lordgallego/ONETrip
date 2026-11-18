@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Car, Send, Phone, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -152,14 +151,9 @@ const VehicleRequestPage = () => {
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto page-enter">
-      <div className="flex items-center gap-3.5 mb-6">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] ring-1 ring-[#A9CDBE]/50">
-          <Car className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Submit Vehicle Request</h1>
-          <p className="text-sm text-muted-foreground">Reserve a service vehicle for an official trip.</p>
-        </div>
+      <div className="mb-6">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-balance">Submit Vehicle Request</h1>
+        <p className="text-sm text-muted-foreground mt-1 text-pretty">Reserve a service vehicle for an official trip.</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -167,7 +161,7 @@ const VehicleRequestPage = () => {
           <CardHeader>
             <CardTitle className="font-display text-base">Request Details</CardTitle>
             <CardDescription>
-              Date Prepared: <Badge variant="outline" className="ml-1 font-mono text-[11px]">{format(submittedAt, "PPpp")}</Badge>
+              Date Prepared: <Badge variant="outline" className="ml-1 font-mono text-[11px] tabular-nums">{format(submittedAt, "PPpp")}</Badge>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -232,15 +226,13 @@ const VehicleRequestPage = () => {
                   </SelectContent>
                 </Select>
                 {selectedVehicle?.driver_name && (
-                  <div className="text-[11px] text-muted-foreground flex items-center gap-3 pt-1">
-                    <span className="inline-flex items-center gap-1"><UserIcon className="h-3 w-3" />{selectedVehicle.driver_name}</span>
-                    {selectedVehicle.driver_contact && (
-                      <span className="inline-flex items-center gap-1 font-mono"><Phone className="h-3 w-3" />{selectedVehicle.driver_contact}</span>
-                    )}
-                  </div>
+                  <p className="text-[11px] text-muted-foreground pt-1 font-mono tabular-nums">
+                    Driver: {selectedVehicle.driver_name}
+                    {selectedVehicle.driver_contact ? ` · ${selectedVehicle.driver_contact}` : ""}
+                  </p>
                 )}
-                <p className="text-[10px] text-muted-foreground italic">
-                  Final dispatch is decided by the Admin — this is just a suggestion.
+                <p className="text-[11px] text-muted-foreground">
+                  Final dispatch is assigned by an Admin.
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -261,7 +253,7 @@ const VehicleRequestPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Pick the user whose endorsement you'll seek before approval.</p>
+                <p className="text-[11px] text-muted-foreground">Select the recommender who will endorse this request.</p>
               </div>
             </div>
           </CardContent>
@@ -270,16 +262,16 @@ const VehicleRequestPage = () => {
         <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
           <CardContent className="pt-5 grid sm:grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-muted-foreground text-xs uppercase tracking-wider">Requested By</p>
-              <p className="font-medium">{requesterName}</p>
+              <p className="text-muted-foreground text-xs">Requested By</p>
+              <p className="font-medium mt-0.5">{requesterName}</p>
             </div>
             <div>
-              <p className="text-muted-foreground text-xs uppercase tracking-wider">Status</p>
-              <Badge variant="outline" className="border-[#F2B53A]/60 bg-[#F2B53A]/20 text-[#8A5A00] dark:text-[#F2B53A]">Pending</Badge>
+              <p className="text-muted-foreground text-xs">Status</p>
+              <Badge variant="outline" className="mt-0.5 border-[#F2B53A]/60 bg-[#F2B53A]/20 text-[#8A5A00] dark:text-[#F2B53A]">Pending</Badge>
             </div>
             <div>
-              <p className="text-muted-foreground text-xs uppercase tracking-wider">Approved</p>
-              <Badge variant="outline">Awaiting approval</Badge>
+              <p className="text-muted-foreground text-xs">Approval</p>
+              <Badge variant="outline" className="mt-0.5">Awaiting approval</Badge>
             </div>
           </CardContent>
         </LiquidGlassCard>
@@ -287,7 +279,7 @@ const VehicleRequestPage = () => {
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => navigate("/dashboard")}>Cancel</Button>
           <Button type="submit" disabled={submitting} className="font-semibold">
-            <Send className="h-4 w-4 mr-2" /> {submitting ? "Submitting..." : "Submit Request"}
+            {submitting ? "Submitting…" : "Submit Request"}
           </Button>
         </div>
       </form>

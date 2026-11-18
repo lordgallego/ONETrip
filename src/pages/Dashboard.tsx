@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { Car, Package, CalendarRange, CheckCircle2, Clock, ThumbsUp, X, Plus, Trash2, ArrowRight } from "lucide-react";
 import { LiquidGlassCard } from "@/components/ui/liquid-glass-card";
 import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -192,12 +191,10 @@ const Dashboard = () => {
       {/* Header + Actions */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#A9CDBE]/60 bg-[#A9CDBE]/25 px-3 py-0.5 text-xs font-medium text-[#1A4D3B] dark:border-[#A9CDBE]/30 dark:bg-[#A9CDBE]/10 dark:text-[#A9CDBE]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#256D54] dark:bg-[#A9CDBE] animate-pulse" />
-            Live Fleet Dispatch
-          </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">Dispatch Timeline</h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-balance">
+            Dispatch Timeline
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-2xl text-pretty">
             Live multi-vehicle schedule. Pending, Recommended, and Approved trips stay visible so every team can coordinate routes and ride-along parcels.
           </p>
         </div>
@@ -207,35 +204,29 @@ const Dashboard = () => {
             onClick={() => navigate("/padala-request")}
             className="border-[#F2B53A]/70 bg-[#F2B53A]/15 text-[#0B1325] hover:bg-[#F2B53A]/30 dark:bg-[#F2B53A]/15 dark:text-[#F2B53A] dark:hover:bg-[#F2B53A]/25 font-semibold"
           >
-            <Package className="h-4 w-4 mr-2 text-[#B87D0A] dark:text-[#F2B53A]" />
             Attach Padala
           </Button>
           <Button onClick={() => navigate("/travel-request")} className="font-semibold shadow-sm">
-            <Plus className="h-4 w-4 mr-2" /> New Travel Request
+            New Travel Request
           </Button>
         </div>
       </div>
 
-      {/* Asymmetric Fleet Telemetry Strip */}
+      {/* Fleet Telemetry Strip */}
       <div className="grid gap-4 lg:grid-cols-12">
-        {/* Primary Fleet Capacity Tile (Sage Accent) */}
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg" className="lg:col-span-3">
-          <div className="p-5 flex items-center justify-between h-full">
-            <div>
-              <span className="text-xs font-medium text-muted-foreground">Active Vehicles</span>
-              <p className="font-mono text-3xl font-bold tracking-tight mt-1 tabular-nums">{stats.vehicleCount}</p>
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1D5944] dark:text-[#A9CDBE] mt-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#256D54] dark:bg-[#A9CDBE]" />
-                Regional fleet online
-              </span>
+          <div className="p-5 flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Active Fleet</span>
+              <span className="size-2 rounded-full bg-[#256D54] dark:bg-[#A9CDBE]" aria-hidden />
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE] ring-1 ring-[#A9CDBE]/50">
-              <Car className="h-6 w-6" />
-            </div>
+            <p className="font-mono text-3xl font-bold tracking-tight mt-2 tabular-nums">{stats.vehicleCount}</p>
+            <span className="text-xs text-muted-foreground mt-1">
+              Service vehicles in rotation
+            </span>
           </div>
         </LiquidGlassCard>
 
-        {/* Dispatch Approval Pipeline Tile */}
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg" className="lg:col-span-6">
           <div className="p-5 h-full flex flex-col justify-between gap-3">
             <div className="flex items-center justify-between">
@@ -246,21 +237,21 @@ const Dashboard = () => {
               <div className="rounded-xl border border-[#F2B53A]/45 bg-[#F2B53A]/15 dark:bg-[#F2B53A]/10 px-3.5 py-2.5">
                 <div className="flex items-center justify-between text-xs font-medium text-[#8A5A00] dark:text-[#F2B53A]">
                   <span>Pending</span>
-                  <Clock className="h-3.5 w-3.5" />
+                  <span className="size-2 rounded-full bg-[#F2B53A]" aria-hidden />
                 </div>
                 <p className="font-mono text-2xl font-bold tabular-nums mt-0.5">{stats.pending}</p>
               </div>
               <div className="rounded-xl border border-sky-400/35 bg-sky-500/10 px-3.5 py-2.5">
                 <div className="flex items-center justify-between text-xs font-medium text-sky-700 dark:text-sky-300">
                   <span>Recommended</span>
-                  <ThumbsUp className="h-3.5 w-3.5" />
+                  <span className="size-2 rounded-full bg-sky-500" aria-hidden />
                 </div>
                 <p className="font-mono text-2xl font-bold tabular-nums mt-0.5">{stats.recommended}</p>
               </div>
               <div className="rounded-xl border border-[#A9CDBE]/60 bg-[#A9CDBE]/25 dark:bg-[#A9CDBE]/15 px-3.5 py-2.5">
                 <div className="flex items-center justify-between text-xs font-medium text-[#1A4D3B] dark:text-[#A9CDBE]">
                   <span>Approved</span>
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span className="size-2 rounded-full bg-[#256D54] dark:bg-[#A9CDBE]" aria-hidden />
                 </div>
                 <p className="font-mono text-2xl font-bold tabular-nums mt-0.5">{stats.approved}</p>
               </div>
@@ -268,37 +259,27 @@ const Dashboard = () => {
           </div>
         </LiquidGlassCard>
 
-        {/* Padala Tile (Signal Gold Accent) */}
         <LiquidGlassCard glowIntensity="sm" shadowIntensity="sm" blurIntensity="lg" className="lg:col-span-3">
-          <div className="p-5 flex items-center justify-between h-full">
-            <div>
+          <div className="p-5 flex flex-col justify-between h-full">
+            <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Padala Parcels</span>
-              <p className="font-mono text-3xl font-bold tracking-tight mt-1 tabular-nums">{stats.padalaCount}</p>
-              <button
-                type="button"
-                onClick={() => navigate("/padala-request")}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9C6500] dark:text-[#F2B53A] hover:underline mt-1"
-              >
-                Send a parcel <ArrowRight className="h-3 w-3" />
-              </button>
+              <span className="size-2 rounded-full bg-[#F2B53A]" aria-hidden />
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2B53A]/25 text-[#8A5A00] dark:bg-[#F2B53A]/20 dark:text-[#F2B53A] ring-1 ring-[#F2B53A]/50">
-              <Package className="h-6 w-6" />
-            </div>
+            <p className="font-mono text-3xl font-bold tracking-tight mt-2 tabular-nums">{stats.padalaCount}</p>
+            <span className="text-xs text-muted-foreground mt-1">
+              Parcels logged for dispatch
+            </span>
           </div>
         </LiquidGlassCard>
       </div>
 
-      {/* Hero: Multi-Vehicle Schedule Timeline */}
+      {/* Multi-Vehicle Schedule Timeline */}
       <LiquidGlassCard glowIntensity="md" shadowIntensity="md" blurIntensity="lg">
-        <CardHeader className="flex-row items-center gap-2.5 pb-3 border-b border-border/40">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#A9CDBE]/30 text-[#1A4D3B] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE]">
-            <CalendarRange className="h-4 w-4" />
-          </div>
-          <div>
-            <CardTitle className="text-base font-display">Multi-Vehicle Schedule</CardTitle>
-            <CardDescription className="text-xs">Select any trip block to inspect details, assign a vehicle, or update approval status.</CardDescription>
-          </div>
+        <CardHeader className="pb-3 border-b border-border/40">
+          <CardTitle className="text-base font-display">Multi-Vehicle Schedule</CardTitle>
+          <CardDescription className="text-xs">
+            Select any trip block to inspect details, assign a vehicle, or update approval status.
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           {loading ? (
@@ -320,24 +301,21 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <RecentTrips
           title="Recently Recommended"
-          icon={ThumbsUp}
-          tint="text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-500/15"
+          dotColor="bg-sky-500"
           items={recentRecommended}
           emptyText="No trips have been recommended yet."
           onSelect={(r) => setSelected(r)}
         />
         <RecentTrips
           title="Recently Approved"
-          icon={CheckCircle2}
-          tint="text-[#1A4D3B] bg-[#A9CDBE]/35 dark:text-[#A9CDBE] dark:bg-[#A9CDBE]/15"
+          dotColor="bg-[#256D54] dark:bg-[#A9CDBE]"
           items={recentApproved}
           emptyText="No trips have been approved yet."
           onSelect={(r) => setSelected(r)}
         />
         <RecentTrips
           title="Recently Rejected"
-          icon={X}
-          tint="text-rose-700 bg-rose-100 dark:text-rose-300 dark:bg-rose-500/15"
+          dotColor="bg-rose-500"
           items={recentRejected}
           emptyText="No rejections — clean slate."
           onSelect={(r) => setSelected(r)}
@@ -345,9 +323,7 @@ const Dashboard = () => {
         <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-display flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md text-[#8A5A00] bg-[#F2B53A]/30 dark:text-[#F2B53A] dark:bg-[#F2B53A]/15">
-                <Package className="h-3.5 w-3.5" />
-              </span>
+              <span className="size-2 rounded-full bg-[#F2B53A]" aria-hidden />
               Recent Padala
             </CardTitle>
           </CardHeader>
@@ -368,7 +344,7 @@ const Dashboard = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge variant="outline" className="font-mono text-[10px]">{p.size} · {p.weight_kg}kg</Badge>
+                      <Badge variant="outline" className="font-mono text-[10px] tabular-nums">{p.size} · {p.weight_kg}kg</Badge>
                       <Badge variant="outline" className={cn("text-[10px]", STATUS_BADGE_STYLE[p.status])}>{p.status}</Badge>
                     </div>
                   </div>
@@ -385,8 +361,8 @@ const Dashboard = () => {
           {selected && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display">{selected.destination}</DialogTitle>
-                <DialogDescription>{selected.purpose}</DialogDescription>
+                <DialogTitle className="font-display text-balance">{selected.destination}</DialogTitle>
+                <DialogDescription className="text-pretty">{selected.purpose}</DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <Field label="From">{selected.origin ?? "—"}</Field>
@@ -446,9 +422,7 @@ const Dashboard = () => {
                 return (
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <span className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-[#F2B53A] text-[#0B1325]">
-                        <Package className="h-3.5 w-3.5" />
-                      </span>
+                      <span className="size-2 rounded-full bg-[#F2B53A]" aria-hidden />
                       <span>Padala riding along ({linked.length})</span>
                     </div>
                     <div className="space-y-1.5">
@@ -463,7 +437,7 @@ const Dashboard = () => {
                               To {p.recipient}{p.destination ? ` · ${p.destination}` : ""} · by {p.requested_by_name ?? "—"}
                             </p>
                           </div>
-                          <Badge variant="outline" className="font-mono text-[10px] shrink-0 border-[#F2B53A]/50">
+                          <Badge variant="outline" className="font-mono text-[10px] tabular-nums shrink-0 border-[#F2B53A]/50">
                             {p.size} · {p.weight_kg}kg
                           </Badge>
                         </div>
@@ -481,7 +455,7 @@ const Dashboard = () => {
                     onClick={() => handleDelete(selected)}
                     className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    Delete trip
                   </Button>
                 ) : <span />}
 
@@ -489,19 +463,19 @@ const Dashboard = () => {
                   {(canRecommend || canApprove) &&
                     (selected.status === "Pending" || selected.status === "Recommended") && (
                       <Button variant="destructive" disabled={actionLoading} onClick={() => handleAction(selected, "Rejected")}>
-                        <X className="h-4 w-4 mr-2" /> Reject
+                        Reject
                       </Button>
                     )}
 
                   {canRecommend && selected.status === "Pending" && (
                     <Button variant="outline" disabled={actionLoading} onClick={() => handleAction(selected, "Recommended")}>
-                      <ThumbsUp className="h-4 w-4 mr-2" /> Recommend
+                      Recommend
                     </Button>
                   )}
 
                   {canApprove && selected.status === "Recommended" && (
                     <Button disabled={actionLoading} onClick={() => handleAction(selected, "Approved")}>
-                      <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
+                      Approve
                     </Button>
                   )}
 
@@ -522,27 +496,24 @@ const Dashboard = () => {
 
 const Field = ({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) => (
   <div className={className}>
-    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    <p className="text-[11px] text-muted-foreground">{label}</p>
     <div className="text-sm font-medium mt-0.5">{children}</div>
   </div>
 );
 
 interface RecentTripsProps {
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  tint: string;
+  dotColor: string;
   items: VehicleRequest[];
   emptyText: string;
   onSelect: (req: VehicleRequest) => void;
 }
 
-const RecentTrips = ({ title, icon: Icon, tint, items, emptyText, onSelect }: RecentTripsProps) => (
+const RecentTrips = ({ title, dotColor, items, emptyText, onSelect }: RecentTripsProps) => (
   <LiquidGlassCard glowIntensity="xs" shadowIntensity="sm" blurIntensity="md">
     <CardHeader className="pb-3">
       <CardTitle className="text-base font-display flex items-center gap-2">
-        <span className={cn("flex h-7 w-7 items-center justify-center rounded-md", tint)}>
-          <Icon className="h-3.5 w-3.5" />
-        </span>
+        <span className={cn("size-2 rounded-full", dotColor)} aria-hidden />
         {title}
       </CardTitle>
     </CardHeader>

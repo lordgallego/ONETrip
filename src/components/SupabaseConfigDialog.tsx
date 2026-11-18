@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Database, ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -64,16 +64,14 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button variant="outline" size="sm" className="gap-2">
-            <Database className="h-3.5 w-3.5" /> Configure Database
+          <Button variant="outline" size="sm">
+            Configure Database
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display flex items-center gap-2">
-            <Database className="h-5 w-5 text-[#1D5944] dark:text-[#A9CDBE]" /> Connect Your Supabase Project
-          </DialogTitle>
+          <DialogTitle className="font-display">Connect Your Supabase Project</DialogTitle>
           <DialogDescription>
             Enter the URL and anon (public) key from your Supabase project. These are stored in your browser only.
           </DialogDescription>
@@ -136,7 +134,7 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
                 rel="noreferrer"
                 className="ml-1 underline inline-flex items-center gap-0.5"
               >
-                Supabase Dashboard <ExternalLink className="h-3 w-3" />
+                Supabase Dashboard <ExternalLink className="size-3" />
               </a>
               {" "}→ Project Settings → API.
             </p>
@@ -162,7 +160,7 @@ const SupabaseConfigDialog = ({ trigger }: Props) => {
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
             <Button onClick={onSave} disabled={saving}>
-              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</> : "Save & Reload"}
+              {saving ? <><Loader2 className="size-4 mr-2 animate-spin" /> Saving…</> : "Save & Reload"}
             </Button>
           </div>
         </DialogFooter>
