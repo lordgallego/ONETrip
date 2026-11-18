@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,29 +11,15 @@ import { useAuth } from "@/lib/auth";
 import NotificationBell from "@/components/NotificationBell";
 import SupabaseConfigDialog from "@/components/SupabaseConfigDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { cn } from "@/lib/utils";
 
 const AppHeader = () => {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const displayName = profile?.name || user?.user_metadata?.full_name || user?.email || "User";
   const initials = displayName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   const avatarUrl = user?.user_metadata?.avatar_url;
   const roleBadge = profile?.role ?? "Unregistered";
-
-  const isActive = (path: string) =>
-    path === "/dashboard"
-      ? location.pathname === "/" || location.pathname === "/dashboard"
-      : location.pathname.startsWith(path);
-
-  const navItems = [
-    { label: "Timeline", href: "/dashboard" },
-    { label: "Travel Request", href: "/travel-request" },
-    { label: "Padala", href: "/padala-request" },
-    ...(isAdmin ? [{ label: "Users", href: "/admin" }] : []),
-  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#0B1325]/10 dark:border-[#A9CDBE]/15 bg-white/85 dark:bg-[#0B1325]/90 backdrop-blur-xl">
@@ -41,7 +27,7 @@ const AppHeader = () => {
         aria-hidden
         className="h-[2px] w-full bg-gradient-to-r from-[#A9CDBE] via-[#F2B53A] to-[#A9CDBE]"
       />
-      <div className="h-14 sm:h-16 flex items-center gap-4 px-4 sm:px-6 max-w-[1600px] mx-auto">
+      <div className="h-14 sm:h-16 flex items-center gap-3 px-4 sm:px-6 max-w-[1600px] mx-auto">
         {/* Brand */}
         <Link
           to="/dashboard"
@@ -49,40 +35,13 @@ const AppHeader = () => {
           title="1TRIP — Tracking & Routing for Intelligent Planning"
         >
           <img src="/onetrip-logo.png" alt="1TRIP" className="size-8 sm:size-9 object-contain" />
-          <div className="flex flex-col leading-none">
+          <div className="hidden sm:flex flex-col leading-none">
             <span className="font-display font-bold text-base tracking-tight text-foreground">1TRIP</span>
-            <span className="hidden lg:inline text-[10px] text-muted-foreground mt-0.5">
-              DOST VI Dispatch
+            <span className="text-[10px] text-muted-foreground mt-0.5">
+              Tracking &amp; Routing for Intelligent Planning
             </span>
           </div>
         </Link>
-
-        {/* Primary Navigation (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1 ml-2" aria-label="Main navigation">
-          {navItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  "relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-                  active
-                    ? "bg-[#A9CDBE]/30 text-[#0B1325] dark:bg-[#A9CDBE]/15 dark:text-[#A9CDBE]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-                )}
-              >
-                {item.label}
-                {active && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-3 -bottom-[11px] sm:-bottom-[15px] h-[2px] rounded-full bg-[#F2B53A]"
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
@@ -144,30 +103,6 @@ const AppHeader = () => {
           </DropdownMenu>
         </div>
       </div>
-
-      {/* Mobile Navigation Bar */}
-      <nav
-        className="flex md:hidden items-center gap-1 px-4 py-1.5 border-t border-border/50 overflow-x-auto scrollbar-hide"
-        aria-label="Mobile navigation"
-      >
-        {navItems.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "px-3 py-1 rounded-md text-xs font-medium shrink-0 transition-colors",
-                active
-                  ? "bg-[#A9CDBE]/30 text-[#0B1325] dark:bg-[#A9CDBE]/20 dark:text-[#A9CDBE]"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
     </header>
   );
 };

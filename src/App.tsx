@@ -79,7 +79,7 @@ const App = () => {
             closeButton
             richColors
             duration={5500}
-            offset={24}
+            offset={64}
             style={{ zIndex: 9999 } as React.CSSProperties}
           />
           <BrowserRouter>
